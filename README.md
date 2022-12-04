@@ -25,7 +25,7 @@ The config files for training are present in the `configs` subdirectory.
 - `default.json`: Config for our approach that we used for the final submission.
 
 ## Running the Pipeline
-The training and testing pipeline can be run using `train_and_evaluate.sh`. This script expects Miniconda installed under `~/miniconda/` and `test.jsonl` present under the `data` subdirectory.
+The training and testing pipeline can be run using `train_and_evaluate.sh`. This script expects Miniconda installed under `~/miniconda3/` and `test.jsonl` present under the `data` subdirectory.
 ```
 bash train_and_evaluate.sh
 ```

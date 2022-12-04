@@ -25,6 +25,7 @@ parser.add_argument('--checkpoint', type=str, required=True)
 parser.add_argument('--test-file', type=str, default="")
 parser.add_argument('--beam-size', type=int, default=1)
 parser.add_argument('--batch-size', type=int, default=16)
+parser.add_argument('--outfilename', type=str, default='results.out')
 # parser.add_argument('--debug', action="store_true", dest="debug")
 # parser.add_argument('--no-debug', action="store_false", dest="debug")
 
@@ -136,5 +137,6 @@ with open(test_score_file, 'w') as f:
     f.write(json.dumps(test_result["rouge"]))
 
 # output result to file for evaluation
-with open('results.out', 'w') as f:
+outfilepath = os.path.join(output_dir, args.outfilename)
+with open(outfilepath, 'w') as f:
     f.write(json.dumps(test_result["accuracy"]))
