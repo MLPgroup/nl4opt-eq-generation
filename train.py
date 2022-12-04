@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import time
 import random
@@ -8,7 +9,7 @@ import numpy as np
 import tqdm
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, Adafactor
+from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, Adafactor, set_seed
 from rouge import Rouge
 from model import TextMappingModel
 from config import Config
@@ -18,19 +19,26 @@ from constants import *
 from utils import *
 import test_utils
 
-
 # configuration
 parser = ArgumentParser()
-parser.add_argument('-c', '--config', default='configs/naive.json')
+parser.add_argument('-c', '--config', default='configs/default.json')
 args = parser.parse_args()
 config = Config.from_json_file(args.config)
 print(config.to_dict())
 
 # fix random seed
+os.environ['PYTHONHASHSEED'] = str(config.seed)
 random.seed(config.seed)
 np.random.seed(config.seed)
 torch.manual_seed(config.seed)
+torch.cuda.manual_seed_all(config.seed)
+set_seed(config.seed)
 torch.backends.cudnn.enabled = False
+torch.use_deterministic_algorithms(True)
+
+# increase recursion limit
+max_length = int(config.max_length)
+sys.setrecursionlimit(max_length  * max_length + 100)
 
 # set GPU device
 use_gpu = config.use_gpu
@@ -38,7 +46,10 @@ if use_gpu and config.gpu_device >= 0:
     torch.cuda.set_device(config.gpu_device)
 
 # output
-timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+timestamp = os.getenv('NL4OPT_TIMESTAMP')
+if timestamp is None:
+    timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+
 log_dir = os.path.join(config.log_path, timestamp)
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
@@ -66,20 +77,20 @@ tokenizer.add_tokens(SPECIAL_TOKENS)
 if config.per_declaration:
     print('==============Prepare Training Set=================')
     train_set = DeclarationMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu,
-                                          no_prompt=(not config.use_prompt))
+                                          no_prompt=(not config.use_prompt), enrich_ner=config.enrich_ner)
     print('==============Prepare Dev Set=================')
     dev_set = DeclarationMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu,
-                                        no_prompt=(not config.use_prompt))
+                                        no_prompt=(not config.use_prompt), enrich_ner=config.enrich_ner)
     # print('==============Prepare Test Set=================')
     # test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu,
     #                                      no_prompt=(not config.use_prompt))
 else:
     print('==============Prepare Training Set=================')
-    train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu)
+    train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
     print('==============Prepare Dev Set=================')
-    dev_set = LPMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu)
-    print('==============Prepare Test Set=================')
-    test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu)
+    dev_set = LPMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
+    # print('==============Prepare Test Set=================')
+    # test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 
 
 vocabs = {}
@@ -107,6 +118,7 @@ model = TextMappingModel(config, vocabs)
 model.load_bert(model_name, cache_dir=config.bert_cache_dir, tokenizer=tokenizer)
 
 if not model_name.startswith('roberta'):
+    print(f"Resizing embedding matrix.")
     model.bert.resize_token_embeddings(len(tokenizer))
 
 if use_gpu:
@@ -158,11 +170,12 @@ for epoch in range(config.max_epoch):
     training_loss = 0
     for batch_idx, batch in enumerate(DataLoader(
             train_set, batch_size=config.batch_size,
-            shuffle=True, drop_last=False, collate_fn=train_set.collate_fn)):
+            shuffle=True, drop_last=False, collate_fn=train_set.collate_fn, num_workers=0)):
 
         decoder_inputs_outputs = generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu,
                                                                  config.max_position_embeddings,
-                                                                 replace_pad_tokens=config.use_copy)
+                                                                 replace_pad_tokens=config.use_copy,
+                                                                 natural_parsing=config.natural_parsing)
         decoder_input_ids = decoder_inputs_outputs['decoder_input_ids']
 
         decoder_labels = decoder_inputs_outputs['decoder_labels']
@@ -221,14 +234,16 @@ for epoch in range(config.max_epoch):
             use_gpu,
             config,
             tqdm_descr='Dev {}'.format(epoch),
-            print_errors=False
+            print_errors=False,
+            natural_parsing=config.natural_parsing,
+            per_declaration=config.per_declaration,
         )
 
         with open(dev_result_file + f'_{epoch}', 'w') as f:
             f.write(json.dumps(dev_result))
-        
+
         # save best result
-        if epoch > 0 and dev_result['accuracy'] > best_score:
+        if epoch > 0 and dev_result['accuracy'] >= best_score:
             best_epoch = epoch
             best_score = dev_result['accuracy']
             print("Saving model with best dev set accuracy:", dev_result['accuracy'])

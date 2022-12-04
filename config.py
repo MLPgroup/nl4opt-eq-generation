@@ -57,6 +57,8 @@ class Config(object):
         self.seed = kwargs.pop('seed', 0)
         self.use_copy = kwargs.pop('use_copy', False)
         self.k = kwargs.pop('k', 12)
+        self.enrich_ner = kwargs.pop('enrich_ner', False)
+        self.natural_parsing = kwargs.pop('natural_parsing', False)
 
     @classmethod
     def from_dict(cls, dict_obj):

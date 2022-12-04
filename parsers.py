@@ -11,6 +11,8 @@ import logging
 from bs4 import BeautifulSoup
 import lxml
 import pdb
+from parse import parse
+from constants import *
 
 # dataclass that stores each term in a declaration
 @dataclass
@@ -79,7 +81,10 @@ def convert_to_canonical(formulation: ProblemFormulation) -> CanonicalFormulatio
         # compute everything as <= at first
         if constraint.type == const.SUM_CONSTRAINT:
             # x + y <= 150
-            row[-1] = constraint.limit
+            try:
+                row[-1] = constraint.limit
+            except:
+                row[-1] = np.nan
 
         elif constraint.type == const.LOWER_BOUND or constraint.type == const.UPPER_BOUND:
             # x <= 50
@@ -87,18 +92,30 @@ def convert_to_canonical(formulation: ProblemFormulation) -> CanonicalFormulatio
             row *= 0
             for k, v in constraint.terms.items():
                 row[v.index] = 1
-            row[-1] = constraint.limit
+
+            try:
+                row[-1] = constraint.limit
+            except:
+                row[-1] = np.nan
         elif constraint.type == const.LINEAR_CONSTRAINT:
             # 2x + 3y <= 20
             for k, v in constraint.terms.items():
                 # check if value was given in formulation
                 row[v.index] = v.value if v.value is not None else np.nan
-            row[-1] = constraint.limit
+
+            try:
+                row[-1] = constraint.limit
+            except:
+                row[-1] = np.nan
         elif constraint.type == const.RATIO_CONTROL_CONSTRAINT:
             # x <= 0.7 (x + y)
-            row *= -constraint.limit
+            try:
+                limit = -constraint.limit
+            except:
+                limit = np.nan
+            row *= limit
             for k, v in constraint.terms.items():
-                row[v.index] = 1 - constraint.limit
+                row[v.index] = 1 + limit
             row[-1] = 0
         elif constraint.type == const.BALANCE_CONSTRAINT_1:
             # x <= 3y
@@ -403,3 +420,292 @@ class JSONFormulationParser(Parser):
                                      entities=entities,
                                      limit=limit,
                                      terms=terms)
+
+class NaturalLikeLanguageParser(Parser):
+    def xmltree(self, data: str) -> Optional[ET.Element]:
+        # fix mismatched tags
+        bs = BeautifulSoup(f'<s>{data}</s>', 'xml')
+        # remove empty elements
+        for x in bs.find_all():
+            if len(x.get_text(strip=True)) == 0:
+                x.extract()
+        return ET.fromstring(str(bs))
+
+
+    def parse(self, data: dict, order_mapping=None) -> ProblemFormulation:
+        try:
+            root = self.xmltree(data)
+            # use iter instead of find_all in case of weird nesting
+            declarations = root.iter('DECLARATION')
+
+            objective = None
+            constraints = []
+
+            for declaration in declarations:
+                declaration = declaration.text 
+                if declaration.startswith("The objective is"):
+                    try:
+                        objective = self.parse_objective(declaration, order_mapping)
+                        break
+                    except Exception as e:
+                        if self.print_errors:
+                            logging.warning(f"Could not parse objective: {declaration}, skipping: {e}")
+
+            for declaration in declarations:
+                declaration = declaration.text 
+                if declaration.startswith("Constraint of type"):
+                    try:
+                        const = self.parse_constraint(declaration, objective.entities)
+                        constraints.append(const)
+                    except Exception as e:
+                        if self.print_errors:
+                            logging.warning(f"Could not parse constraint: {declaration}, skipping: {e}")
+
+            return ProblemFormulation(objective, constraints, entities=objective.entities)
+        except Exception as e:
+            if self.print_errors:
+                logging.warning(f"Could not parse text {data}. Error: {e}")
+            return ProblemFormulation(ObjectiveDeclaration("", {}, {}, ""), [], entities={})
+
+
+    def parse_objective(self, declaration, order_mapping):
+        obj_pattern = "The objective is {} which is defined as the sum of {}. {} the objective."
+        extracted = parse(obj_pattern, declaration)
+        entities = order_mapping if order_mapping is not None else {}
+        try:
+            obj_name = self.parse_entity(extracted[0], order_mapping)
+        except:
+            obj_name = None
+
+        try:
+            obj_def = extracted[1]
+        except:
+            obj_def = None
+
+        try:
+            obj_dir = self.parse_text(extracted[2])
+        except:
+            obj_dir = None
+
+        variables = {}
+        count = 0
+        if obj_def is not None and obj_def != EMPTY_TOKEN:
+            if "times" in obj_def:
+                terms = {}
+                for term in obj_def.split(", "):
+                    try:
+                        var = term.split("times")[1].strip()
+                    except:
+                        var = None
+
+                    try:
+                        multiplier = term.split("times")[0].strip()
+                    except:
+                        multiplier = None
+
+                    if order_mapping is None:
+                        name = self.parse_entity(var, {})
+                        current_var = Term(name=name, index=count)
+                        entities[name] = count
+                        count += 1
+                    else:
+                        name = self.parse_entity(var, order_mapping)
+                        current_var = Term(name=name, index=entities[name])
+
+                    current_var.value = self.parse_number(multiplier)
+                    variables[current_var.name] = current_var
+            else:
+                vars = obj_def.split(", ")
+                for var in vars:
+                    if order_mapping is None:
+                        name = self.parse_entity(var, {})
+                        current_var = Term(name=name, index=count)
+                        entities[name] = count
+                        count += 1
+                    else:
+                        name = self.parse_entity(var, order_mapping)
+                        current_var = Term(name=name, index=entities[name])
+                    
+                    variables[current_var.name] = current_var
+
+        return ObjectiveDeclaration(name=obj_name, direction=obj_dir, terms=variables, entities=entities)
+        
+
+    def parse_constraint(self, declaration, entities):
+        const_template = "Constraint of type {} with direction {} is that {}"
+        extracted = parse(const_template, declaration)
+
+        try:
+            const_type = extracted[0]
+        except:
+            const_type = ""
+
+        try:
+            const_dir = extracted[1]
+        except:
+            const_dir = ""
+
+        try:
+            const_details = extracted[2]
+        except:
+            const_details = None
+
+        variables, op, limit = OrderedDict(), "", ""
+        if const_details is not None:
+            if const_type == "sum":
+                const_type = TYPE_SUM_CONST
+                template = "the sum is {} to {}"
+                extracted = parse(template, const_details)
+                try:
+                    op = self.parse_text(extracted[0])
+                except:
+                    op = None
+                try:
+                    limit = self.parse_number(extracted[1])
+                except:
+                    limit = ""
+            elif const_type == "lowerbound":
+                const_type = TYPE_LOWER_BOUND
+                template = "{} is {} to {}"
+                extracted = parse(template, const_details)
+                try:
+                    var_name = self.parse_entity(extracted[0], entities)
+                except:
+                    var_name = None
+                try:
+                    op = extracted[1]
+                except:
+                    op = None
+                try:
+                    limit = self.parse_number(extracted[2])
+                except:
+                    limit = ""
+                var = Term(name=var_name, index=entities[var_name])
+                variables[var.name] = var
+            elif const_type == "xby":
+                const_type = TYPE_XBY_CONST
+                template = "{} is {} to {} times of {}"
+                extracted = parse(template, const_details)
+                try:
+                    x_var_name = extracted[0]
+                except:
+                    x_var_name = None
+                try:
+                    op = extracted[1]
+                except:
+                    op = None
+                try:
+                    param = self.parse_number(extracted[2])
+                except:
+                    param = np.nan
+                try:
+                    y_var_name = extracted[3]
+                except:
+                    y_var_name = None
+                
+                x_var = Term(name=x_var_name, index=entities[x_var_name])
+                y_var = Term(name=y_var_name, index=entities[y_var_name])
+                y_var.value = param
+                variables[y_var.name] = y_var
+                variables[x_var.name] = x_var
+            elif const_type == "ratio":
+                const_type = TYPE_RATIO_CONST
+                template = "{} is {} to {} of total"
+                extracted = parse(template, const_details)
+                try:
+                    var_name = extracted[0]
+                except:
+                    var_name = None
+                try:
+                    op = extracted[1]
+                except:
+                    op = None
+                try:
+                    limit = self.parse_number(extracted[2])
+                except:
+                    limit = ""
+                var = Term(name=var_name, index=entities[var_name])
+                variables[var.name] = var
+            elif const_type == "upperbound":
+                const_type = TYPE_UPPER_BOUND
+                template = "{} is {} to {}"
+                extracted = parse(template, const_details)
+                try:
+                    var_name = self.parse_entity(extracted[0], entities)
+                except:
+                    var_name = None
+                try:
+                    op = extracted[1]
+                except:
+                    op = None
+                try:
+                    limit = self.parse_number(extracted[2])
+                except:
+                    limit = ""
+                var = Term(name=var_name, index=entities[var_name])
+                variables[var.name] = var
+            elif const_type == "xy":
+                const_type = TYPE_XY_CONST
+                template = "{} is {} to {}"
+                extracted = parse(template, const_details)
+                try:
+                    x_var_name = extracted[0]
+                except:
+                    x_var_name = None
+                try:
+                    op = extracted[1]
+                except:
+                    op = None
+                try:
+                    y_var_name = extracted[2]
+                except:
+                    y_var_name = None
+                x_var = Term(name=x_var_name, index=entities[x_var_name])
+                y_var = Term(name=y_var_name, index=entities[y_var_name])
+                variables[y_var.name] = y_var
+                variables[x_var.name] = x_var
+            elif const_type == "linear":
+                const_type = TYPE_LINEAR_CONST
+                template = "sum of {} is {} to {}"
+                extracted = parse(template, const_details)
+                try:
+                    termsstr = extracted[0]
+                except:
+                    termsstr = None
+                try:
+                    op = extracted[1]
+                except:
+                    op = None
+                try:
+                    limit = self.parse_number(extracted[2])
+                except:
+                    limit = ""
+
+                if termsstr is not None and termsstr != EMPTY_TOKEN:
+                    for term in termsstr.split(", "):
+                        try:
+                            multiplier = self.parse_number(term.split(" times ")[0])
+                        except:
+                            multiplier = np.nan
+                        try:
+                            var_name = self.parse_entity(term.split(" times ")[1], entities)
+                        except:
+                            var_name = None
+                        var = Term(name=var_name, index=entities[var_name])
+                        var.value = multiplier
+                        variables[var.name] = var
+            else:
+                if self.print_errors:
+                    logging.warning(f"Error in parsing: {declaration}")
+
+        return ConstraintDeclaration(
+            direction=const_dir,
+            limit=limit,
+            operator=op,
+            type=const_type,
+            terms=variables,
+            entities=entities,
+        )
+
+
+

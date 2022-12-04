@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 from constants import SPECIAL_TOKENS
 from collections import namedtuple
-from utils import token2sub_tokens, format_typed_mention, generate_decoder_inputs_outputs
+from utils import token2sub_tokens, format_typed_mention, generate_decoder_inputs_outputs, canonicalize_template
 import json
 import torch
 from torch.utils.data import DataLoader
@@ -23,7 +23,7 @@ Batch = namedtuple('Batch', field_names=batch_fields,
 
 
 class LPMappingDataset(Dataset):
-    def __init__(self, path, max_length=128, gpu=False, no_prompt=False):
+    def __init__(self, path, max_length=128, gpu=False, no_prompt=False, enrich_ner=False, natural_parsing=False):
         """
         :param path (str): path to the data file.
         :param max_length (int): max sentence length.
@@ -35,6 +35,8 @@ class LPMappingDataset(Dataset):
         self.max_length = max_length
         self.gpu = gpu
         self.no_prompt = no_prompt
+        self.enrich_ner = enrich_ner
+        self.natural_parsing = natural_parsing
 
         self.load_data()
 
@@ -51,6 +53,31 @@ class LPMappingDataset(Dataset):
             data = {k:v for x in json_lines for k,v in x.items()}
             self.data = data
 
+    def get_document(self, content):
+        if not self.enrich_ner:
+            output = content["document"]
+        else:
+            document = content["document"]
+            spans = content["spans"]
+
+            idx_to_tag = {}
+            for span in spans:
+                start = span["start"]
+                end = span["end"]
+                tag = span["label"]
+
+                idx_to_tag[start] = f"<{tag}> "
+                idx_to_tag[end] = f" </{tag}>"
+
+            output = ""
+            for idx, char in enumerate(document):
+                if idx not in idx_to_tag:
+                    output += char
+                else:
+                    output += idx_to_tag[idx] + char
+
+        return output
+
     def create_decoder_input_chunks(self, example, tokenizer):
 
         obj_declaration = [example['obj_declaration']] if example['obj_declaration'] else []
@@ -62,15 +89,20 @@ class LPMappingDataset(Dataset):
         for template in templates:
 
             # convert template to list of typed chunks
-            typed_fragments = format_typed_mention(template)
-            encoded_typed_fragments = []
-            for fragment in typed_fragments:
-                assert isinstance(fragment, list)
-                # entity = []
-                encoded_fragment = []
-                for entity_token in fragment:
-                    encoded_fragment += token2sub_tokens(tokenizer, entity_token)
-                encoded_typed_fragments.append(encoded_fragment)
+            if not self.natural_parsing:
+                typed_fragments = format_typed_mention(template)
+                encoded_typed_fragments = []
+                for fragment in typed_fragments:
+                    assert isinstance(fragment, list)
+                    # entity = []
+                    encoded_fragment = []
+                    for entity_token in fragment:
+                        encoded_fragment += token2sub_tokens(tokenizer, entity_token)
+                    encoded_typed_fragments.append(encoded_fragment)
+            else:
+                typed_fragments = canonicalize_template(template)
+                encoded_typed_fragments = token2sub_tokens(tokenizer, typed_fragments)
+
             res.append(encoded_typed_fragments)
         return res
 
@@ -82,7 +114,7 @@ class LPMappingDataset(Dataset):
 
         data = []
         for doc_id, content in self.data.items():  # TODO verify: is this a list or dict?
-            document = content['document']
+            document = self.get_document(content) # ['document']
             order_mapping = content.get('order_mapping', None)
 
             input_ids = tokenizer([document], max_length=self.max_length, truncation=True)['input_ids'][0]

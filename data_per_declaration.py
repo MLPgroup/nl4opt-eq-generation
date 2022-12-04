@@ -9,7 +9,6 @@ from transformers import AutoTokenizer
 from data import LPMappingDataset, instance_fields, batch_fields, Instance, Batch
 
 class DeclarationMappingDataset(LPMappingDataset):
-
     def numberize(self, tokenizer, vocabs):
         """Numberize word pieces, labels, etcs.
         :param tokenizer: Bert tokenizer.
@@ -18,7 +17,7 @@ class DeclarationMappingDataset(LPMappingDataset):
 
         data = []
         for doc_id, content in self.data.items():  # TODO verify: is this a list or dict?
-            document = content['document']
+            document = self.get_document(content)# ['document']
             order_mapping = content['order_mapping']
 
             orig_input_ids = tokenizer([document], max_length=self.max_length, truncation=True)['input_ids'][0]
