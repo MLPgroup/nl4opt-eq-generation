@@ -17,5 +17,5 @@ export NL4OPT_TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
 CUBLAS_WORKSPACE_CONFIG=:4096:8 python train.py --config configs/default.json
 
 # Evaluate trained model on test set and print results to "results.out"
-python test.py --gpu 0 --checkpoint output/baseline_no_declr_ner_large/$NL4OPT_TIMESTAMP/best-checkpoint.mdl --test-file test.jsonl --batch-size 1 --beam-size 5
+python test.py --gpu 0 --checkpoint output/baseline_no_declr_ner_large/$NL4OPT_TIMESTAMP/best-checkpoint.mdl --test-file data/test.jsonl --batch-size 1 --beam-size 5
 
