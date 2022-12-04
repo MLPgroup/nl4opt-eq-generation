@@ -1,4 +1,5 @@
 import os
+import sys
 from argparse import ArgumentParser
 
 import numpy as np
@@ -22,6 +23,8 @@ parser.add_argument('--checkpoint', type=str, required=True)
 # parser.add_argument('--eval-train', action="store_true", dest="eval_train")
 # parser.add_argument('--no-eval-train', action="store_false", dest="eval_train")
 parser.add_argument('--test-file', type=str, default="")
+parser.add_argument('--beam-size', type=int, default=1)
+parser.add_argument('--batch-size', type=int, default=16)
 # parser.add_argument('--debug', action="store_true", dest="debug")
 # parser.add_argument('--no-debug', action="store_false", dest="debug")
 
@@ -33,6 +36,11 @@ args = parser.parse_args()
 use_gpu = args.gpu > -1
 checkpoint = torch.load(args.checkpoint, map_location=f'cuda:{args.gpu}' if use_gpu else 'cpu')
 config = Config.from_dict(checkpoint['config'])
+config.eval_batch_size = args.batch_size
+
+# increase recursion limit
+max_length = int(config.max_length)
+sys.setrecursionlimit(max_length  * max_length + 100)
 
 # Override test file
 if args.test_file:
@@ -80,7 +88,10 @@ train_set = None
 
 print('============== Prepare Test Set: starting =================')
 vocabs = {}
-test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu)
+if config.per_declaration:
+    test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
+else:
+    test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
 test_set.numberize(tokenizer, vocabs)
 print('============== Prepare Test Set: finished =================')
 
@@ -110,7 +121,11 @@ test_result = test_utils.evaluate(
         use_gpu,
         config,
         tqdm_descr='Test',
-        ckpt_basename=ckpt_basename)
+        ckpt_basename=ckpt_basename,
+        natural_parsing=config.natural_parsing,
+        beam_size=args.beam_size,
+        per_declaration=config.per_declaration,
+    )
 
 print(f'Accuracy: {test_result["accuracy"]}')
 print(f'Rouge: {test_result["rouge"]}')
@@ -120,4 +135,6 @@ with open(test_result_file, 'w') as f:
 with open(test_score_file, 'w') as f:
     f.write(json.dumps(test_result["rouge"]))
 
-
+# output result to file for evaluation
+with open('results.out', 'w') as f:
+    f.write(json.dumps(test_result["accuracy"]))

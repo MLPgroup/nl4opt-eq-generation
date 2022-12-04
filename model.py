@@ -135,7 +135,7 @@ class TextMappingModel(nn.Module):
 
         return decoded_ids
 
-    def predict(self, batch, tokenizer, epoch=None):
+    def predict(self, batch, tokenizer, epoch=None, beam_size=1):
         self.eval()
 
         with torch.no_grad():
@@ -160,7 +160,7 @@ class TextMappingModel(nn.Module):
             decoder_token_masks[:, tokenizer.bos_token_id] = 1
 
 
-            decoded_ids = self.generate(batch, num_beams=1, decoding_length=decoding_length, tokenizer=tokenizer,
+            decoded_ids = self.generate(batch, num_beams=beam_size, decoding_length=decoding_length, tokenizer=tokenizer,
                                             decoder_token_masks=decoder_token_masks)
 
             res = {
