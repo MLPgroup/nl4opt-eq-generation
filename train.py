@@ -21,7 +21,7 @@ import test_utils
 
 # configuration
 parser = ArgumentParser()
-parser.add_argument('-c', '--config', default='configs/naive.json')
+parser.add_argument('-c', '--config', default='configs/default.json')
 args = parser.parse_args()
 config = Config.from_json_file(args.config)
 print(config.to_dict())
