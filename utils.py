@@ -3,8 +3,7 @@ import random
 from collections import OrderedDict
 import json
 from tabulate import tabulate
-from typing import Dict, List, Tuple, Optional
-import numpy as np
+from typing import Dict, List, Tuple
 import re
 
 from constants import *
@@ -41,7 +40,7 @@ def format_typed_mention(template):
     else:
         if "direction" in template:
             mentions.append([START_OF_CONST_DIR, " " + template["direction"].strip(" ") + " ", END_OF_CONST_DIR])
-        
+
         if "operator" in template:
             mentions.append([START_OF_OPERATOR, " " + template["operator"].strip(" ") + " ", END_OF_OPERATOR])
 
@@ -185,7 +184,7 @@ def generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, max_positi
 
         for template in decoder_input_chunk: # decoder_input_chunk: 3D, template: 2D
             flatten_entities.append(tokenizer.convert_tokens_to_ids(START_OF_TEMPLATE))
-            for entity in template: # template 2D, 
+            for entity in template: # template 2D,
                 if natural_parsing:
                     flatten_entities.append(entity)
                 else:
@@ -200,32 +199,6 @@ def generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, max_positi
     res = format_inputs_outputs(flattened_seqs, tokenizer, use_gpu, max_position_embeddings, replace_pad_tokens)
 
     return res
-
-
-# From: https://github.com/Lightning-AI/lightning/blob/master/src/pytorch_lightning/utilities/seed.py
-def pl_worker_init_function(worker_id: int, rank: Optional[int] = None) -> None:  # pragma: no cover
-    """The worker_init_fn that Lightning automatically adds to your dataloader if you previously set the seed with
-    ``seed_everything(seed, workers=True)``.
-    See also the PyTorch documentation on
-    `randomness in DataLoaders <https://pytorch.org/docs/stable/notes/randomness.html#dataloader>`_.
-    """
-    # implementation notes: https://github.com/pytorch/pytorch/issues/5059#issuecomment-817392562
-    global_rank = rank if rank is not None else rank_zero_only.rank
-    process_seed = torch.initial_seed()
-    # back out the base seed so we can use all the bits
-    base_seed = process_seed - worker_id
-    log.debug(
-        f"Initializing random number generators of process {global_rank} worker {worker_id} with base seed {base_seed}"
-    )
-    ss = np.random.SeedSequence([base_seed, worker_id, global_rank])
-    # use 128 bits (4 x 32-bit words)
-    np.random.seed(ss.generate_state(4))
-    # Spawn distinct SeedSequences for the PyTorch PRNG and the stdlib random module
-    torch_ss, stdlib_ss = ss.spawn(2)
-    torch.manual_seed(torch_ss.generate_state(1, dtype=np.uint64)[0])
-    # use 128 bits expressed as an integer
-    stdlib_seed = (stdlib_ss.generate_state(2, dtype=np.uint64).astype(object) * [1 << 64, 1]).sum()
-    random.seed(stdlib_seed)
 
 
 def canonicalize_objective(obj):
@@ -258,7 +231,7 @@ def canonicalize_objective(obj):
         objdef,
         obj["direction"],
     )
-    
+
     return canobj
 
 
@@ -268,12 +241,12 @@ def canonicalize_constraint(const):
         output += f"of type {const['type']} "
     else:
         raise Exception(f"type is not defined in {const}")
-        
+
     if "direction" in const:
         output += f"with direction {const['direction']} "
-        
+
     output += "is that "
-    
+
     if const["type"] == "linear":
         if "terms" in const:
             termsarr = []

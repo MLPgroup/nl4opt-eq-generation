@@ -1,11 +1,11 @@
 {
     "debug": true,
-    "accumulate_step": 2,
-    "batch_size": 16,
-    "eval_batch_size": 16,
+    "accumulate_step": 16,
+    "batch_size": 2,
+    "eval_batch_size": 1,
     "eval_period": 1,
 
-    "bert_cache_dir": ".cache/bert",
+    "bert_cache_dir": "./bert",
     "bert_dropout": 0.0,
     "bert_learning_rate": 5e-05,
     "bert_model_name": "facebook/bart-base",
@@ -19,7 +19,7 @@
     "SOT_weights":5,
     "max_position_embeddings":1024,
     "grad_clipping": 5.0,
-    "log_path": "log/baseline",
+    "log_path": "./log/baseline",
     "k":10,
     "max_epoch": 200,
     "warmup_epoch": 5,
@@ -28,7 +28,7 @@
 
     "num_beams":1,
 
-    "output_path": "output/baseline",
+    "output_path": "./output/baseline",
     "use_copy": true,
     "per_declaration" : true,
     "use_prompt": true,

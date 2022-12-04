@@ -59,7 +59,6 @@ class Config(object):
         self.k = kwargs.pop('k', 12)
         self.enrich_ner = kwargs.pop('enrich_ner', False)
         self.natural_parsing = kwargs.pop('natural_parsing', False)
-        self.config = kwargs.pop('run_name', 'test')
 
     @classmethod
     def from_dict(cls, dict_obj):
