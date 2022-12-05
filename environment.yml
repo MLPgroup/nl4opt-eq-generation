@@ -1,18 +1,12 @@
-name: ngtgen
+name: tgen
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - _libgcc_mutex=0.1=main
-  - _openmp_mutex=4.5=1_gnu
   - ca-certificates=2022.9.24=ha878542_0
   - ld_impl_linux-64=2.35.1=h7274673_9
   - libffi=3.3=he6710b0_2
-  - libgcc-ng=9.3.0=h5101ec6_17
-  - libgomp=9.3.0=h5101ec6_17
-  - libstdcxx-ng=9.3.0=hd4cf53a_17
   - ncurses=6.2=he6710b0_1
-  - openssl=1.1.1l=h7f8727e_0
   - parse=1.19.0=pyh44b312d_0
   - pip=21.2.2=py37h06a4308_0
   - python=3.7.11=h12debd9_0
@@ -124,4 +118,4 @@ dependencies:
     - widgetsnbextension==4.0.3
     - word2number==1.1
     - zipp==3.5.0
-prefix: ~/.miniforge/envs/ngtgen
+prefix: ~/.miniforge/envs/tgen
