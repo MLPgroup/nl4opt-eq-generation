@@ -9,8 +9,8 @@ conda env remove -n $CONDA_ENV_NAME
 conda env create -f environment.yml -n $CONDA_ENV_NAME
 conda activate $CONDA_ENV_NAME
 
-# Force upgrade PyTorch and Cuda
-conda install --yes pytorch pytorch-cuda=11.6 -c pytorch-nightly -c nvidia
+# Upgrade PyTorch and Cuda
+conda install --yes pytorch=1.13.0 pytorch-cuda=11.6 -c pytorch -c nvidia
 
 # Run training
 export NL4OPT_TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
