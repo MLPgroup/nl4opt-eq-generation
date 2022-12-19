@@ -22,8 +22,12 @@ import test_utils
 # configuration
 parser = ArgumentParser()
 parser.add_argument('-c', '--config', default='configs/default.json')
+parser.add_argument('--seed', type=int, default=None)
 args = parser.parse_args()
 config = Config.from_json_file(args.config)
+if args.seed is not None:
+    config.seed = args.seed
+
 print(config.to_dict())
 
 # fix random seed
