@@ -257,14 +257,12 @@ for epoch in range(config.max_epoch):
             model_output_path = os.path.join(output_dir, 'best-checkpoint.mdl')
             torch.save(state, model_output_path)
 
-        # Save periodic checkpoints
-        if epoch % 20 == 0 or epoch == config.max_epoch - 1:
-            # saving model every 20 epochs but not until after 1/3 of training
-            state = dict(model=model.state_dict(),
-                         config=config.to_dict(),
-                         vocabs=vocabs)
-            model_output_path = os.path.join(output_dir, 'checkpoint-{}.mdl'.format(epoch))
-            torch.save(state, model_output_path)
+        # Save last checkpoint
+        state = dict(model=model.state_dict(),
+                        config=config.to_dict(),
+                        vocabs=vocabs)
+        model_output_path = os.path.join(output_dir, 'checkpoint-last.mdl')
+        torch.save(state, model_output_path)
 
         # # run predictions on test set
 
