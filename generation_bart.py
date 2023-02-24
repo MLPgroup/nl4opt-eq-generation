@@ -31,6 +31,7 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
             output_attentions=None,
             output_hidden_states=None,
             return_dict=None,
+            cross_attn_head_mask=None,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
@@ -56,7 +57,9 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
                              use_cache=use_cache,
                              output_attentions=output_attentions,
                              output_hidden_states=output_hidden_states,
-                             return_dict=return_dict, )
+                             return_dict=return_dict,
+                             cross_attn_head_mask=cross_attn_head_mask,
+                             )
 
         if input_ids is None:
             input_ids = self._cache_input_ids
