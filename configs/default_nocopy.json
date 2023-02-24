@@ -19,7 +19,7 @@
     "SOT_weights":5,
     "max_position_embeddings":256,
     "grad_clipping": 1.0,
-    "log_path": "log/default",
+    "log_path": "log/default_nocopy",
     "k":10,
     "max_epoch": 400,
     "warmup_epoch": 5,
@@ -28,8 +28,8 @@
 
     "num_beams":1,
 
-    "output_path": "output/default",
-    "use_copy": true,
+    "output_path": "output/default_nocopy",
+    "use_copy": false,
     "per_declaration" : false,
     "use_prompt": true,
     "enrich_ner": true,
@@ -38,5 +38,5 @@
     "use_gpu": true,
     "gpu_device": 0,
     "seed": 13,
-    "run_name": "default"
+    "run_name": "default_nocopy"
 }
