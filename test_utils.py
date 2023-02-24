@@ -124,7 +124,6 @@ def evaluate(tokenizer,
         gold_txt = [tokenizer.decode(x.tolist(), skip_special_tokens=True) for x in decoder_inputs_outputs['decoder_labels']]
         pred_texts.extend(pred_txt)
         gold_texts.extend(gold_txt)
-        measures.extend(diff_metrics)
 
         gold_pred_pairs.append({
             "gold": gold_txt,

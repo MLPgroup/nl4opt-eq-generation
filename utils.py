@@ -2,7 +2,6 @@ import torch
 import random
 from collections import OrderedDict
 import json
-from tabulate import tabulate
 from typing import Dict, List, Tuple
 import re
 

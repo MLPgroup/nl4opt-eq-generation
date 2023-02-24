@@ -1,4 +1,4 @@
-name: nl4opt-gen
+name: tgen
 channels:
   - defaults
   - pytorch
@@ -12,4 +12,10 @@ dependencies:
   - pytorch-cuda=11.6
   - transformers=4.15.0
   - tokenizers=0.10.3
-prefix: ~/.miniconda3/envs/nl4opt-gen
+  - word2number=1.1
+  - ca-certificates
+  - certifi
+  - openssl
+  - beautifulsoup4=4.11.1
+  - lxml=4.9.0
+prefix: ~/.miniforge/envs/tgen
