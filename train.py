@@ -10,7 +10,6 @@ import tqdm
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, Adafactor, set_seed
-from rouge import Rouge
 from model import TextMappingModel
 from config import Config
 from data import LPMappingDataset
@@ -162,7 +161,6 @@ best_dev = -np.inf
 current_step = 0
 best_epoch = 0
 best_score = 0
-metric = Rouge()
 
 print('================Start Training================')
 for epoch in range(config.max_epoch):

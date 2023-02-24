@@ -13,7 +13,6 @@ from data import LPMappingDataset
 from data_per_declaration import DeclarationMappingDataset
 from constants import SPECIAL_TOKENS
 from utils import *
-from rouge import Rouge
 import test_utils
 
 # configuration
@@ -129,12 +128,9 @@ test_result = test_utils.evaluate(
     )
 
 print(f'Accuracy: {test_result["accuracy"]}')
-print(f'Rouge: {test_result["rouge"]}')
 
 with open(test_result_file, 'w') as f:
     f.write(json.dumps(test_result))
-with open(test_score_file, 'w') as f:
-    f.write(json.dumps(test_result["rouge"]))
 
 # output result to file for evaluation
 outfilepath = os.path.join(output_dir, args.outfilename)
