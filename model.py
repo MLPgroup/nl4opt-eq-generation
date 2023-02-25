@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AutoModelForSeq2SeqLM
-from transformers import BeamSearchScorer, LogitsProcessorList, NoBadWordsLogitsProcessor
+from transformers import BeamSearchScorer, LogitsProcessorList, NoBadWordsLogitsProcessor, ForcedBOSTokenLogitsProcessor, MaxLengthCriteria
 from generation_bart import CopyConditionalGeneration
 from constants import *
 
@@ -112,13 +112,18 @@ class TextMappingModel(nn.Module):
 
         # # list of bad words to prevent the model from predicting these outputs
         # bad_words = [[tokenizer.sep_token_id], [tokenizer.pad_token_id]]
-        # logits_processor = NoBadWordsLogitsProcessor(bad_words_ids=bad_words, eos_token_id=tokenizer.eos_token_id)
+        # logits_processor = LogitsProcessorList([
+        #     NoBadWordsLogitsProcessor(bad_words_ids=bad_words, eos_token_id=tokenizer.eos_token_id),
+        #     ForcedBOSTokenLogitsProcessor(bos_token_id = tokenizer.bos_token_id),
+        # ])
+        # stopping_criteria = MaxLengthCriteria(max_length = decoding_length)
 
         # # seems that this is required if our model is a encoder-decoder architecture.
         # model_kwargs = {
         #     "encoder_outputs": self.bert.get_encoder()(batch.input_ids.repeat_interleave(num_beams, dim=0),
         #                                                batch.attention_masks.repeat_interleave(num_beams, dim=0),
         #                                                return_dict=True),
+        #     "attention_mask": batch.attention_masks,
         # }
         # # huggingface beamsearch workaround
         # self.bert._cache_input_ids = batch.input_ids
@@ -131,7 +136,7 @@ class TextMappingModel(nn.Module):
         # # decoder_input_ids = decoder_input_ids.repeat(num_beams, 1)
 
         # if num_beams == 1:
-        #     decoded_ids = self.bert.greedy_search(decoder_input_ids, max_length=decoding_length,
+        #     decoded_ids = self.bert.greedy_search(decoder_input_ids, stopping_criteria = stopping_criteria,
         #                             logits_processor=logits_processor, **model_kwargs)
         # else:
         #     beam_scorer = BeamSearchScorer(
