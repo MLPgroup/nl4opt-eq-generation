@@ -13,9 +13,8 @@ dependencies:
   - transformers=4.15.0
   - tokenizers=0.10.3
   - word2number=1.1
-  - ca-certificates
-  - certifi
-  - openssl
   - beautifulsoup4=4.11.1
   - lxml=4.9.0
+  - ipython=7.33.0
+  - notebook=6.4.12
 prefix: ~/.miniforge/envs/tgen
