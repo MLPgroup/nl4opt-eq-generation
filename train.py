@@ -10,7 +10,6 @@ import tqdm
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, Adafactor, set_seed
-from rouge import Rouge
 from model import TextMappingModel
 from config import Config
 from data import LPMappingDataset
@@ -129,26 +128,26 @@ if use_gpu:
     model.cuda(device=config.gpu_device)
 
 # optimizer
-param_groups = [
-    {
-        'params': [p for n, p in model.named_parameters() if n.startswith('bert')],
-        'lr': config.bert_learning_rate, 'weight_decay': config.bert_weight_decay
-    },
-    {
-        'params': [p for n, p in model.named_parameters() if not n.startswith('bert')
-                   and 'crf' not in n and 'global_feature' not in n],
-        'lr': config.learning_rate, 'weight_decay': config.weight_decay
-    },
-    {
-        'params': [p for n, p in model.named_parameters() if not n.startswith('bert')
-                   and ('crf' in n or 'global_feature' in n)],
-        'lr': config.learning_rate, 'weight_decay': 0
-    }
-]
 if model.bert.config.name_or_path.startswith('t5'):
+    param_groups = [
+        {
+            'params': [p for n, p in model.named_parameters() if n.startswith('bert')],
+            'lr': config.bert_learning_rate, 'weight_decay': config.bert_weight_decay
+        },
+        {
+            'params': [p for n, p in model.named_parameters() if not n.startswith('bert')
+                    and 'crf' not in n and 'global_feature' not in n],
+            'lr': config.learning_rate, 'weight_decay': config.weight_decay
+        },
+        {
+            'params': [p for n, p in model.named_parameters() if not n.startswith('bert')
+                    and ('crf' in n or 'global_feature' in n)],
+            'lr': config.learning_rate, 'weight_decay': 0
+        }
+    ]
     optimizer = Adafactor(params=param_groups)
 else:
-    optimizer = AdamW(params=param_groups)
+    optimizer = AdamW(params=model.parameters(), lr = config.bert_learning_rate, weight_decay = config.bert_weight_decay)
 schedule = get_linear_schedule_with_warmup(optimizer,
                                            num_warmup_steps=batch_num * config.warmup_epoch,
                                            num_training_steps=batch_num * config.max_epoch)
@@ -162,7 +161,6 @@ best_dev = -np.inf
 current_step = 0
 best_epoch = 0
 best_score = 0
-metric = Rouge()
 
 print('================Start Training================')
 for epoch in range(config.max_epoch):
@@ -243,11 +241,13 @@ for epoch in range(config.max_epoch):
             per_declaration=config.per_declaration,
         )
 
+        print(f"dev_accuracy: {dev_result['accuracy']}")
+
         with open(dev_result_file + f'_{epoch}', 'w') as f:
             f.write(json.dumps(dev_result))
 
         # save best result
-        if epoch > 0 and dev_result['accuracy'] >= best_score:
+        if dev_result['accuracy'] >= best_score:
             best_epoch = epoch
             best_score = dev_result['accuracy']
             print("Saving model with best dev set accuracy:", dev_result['accuracy'])

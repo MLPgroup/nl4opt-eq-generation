@@ -15,12 +15,6 @@ Verify that it was installed:
 conda env list
 ```
 
-Install PyTorch 1.13.0:
-```
-conda activate <ENV_NAME>
-conda install pytorch=1.13.0 pytorch-cuda=11.6 -c pytorch -c nvidia
-```
-
 # Running the Pipeline
 ## Download the Dataset
 First, copy the dataset files `train.jsonl` and `dev.jsonl` to the `data` subdirectory. The dataset files can be found under the `generation_task` subdirectory in [the dataset repository](https://github.com/nl4opt/nl4opt-competition).

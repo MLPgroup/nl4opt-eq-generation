@@ -31,6 +31,7 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
             output_attentions=None,
             output_hidden_states=None,
             return_dict=None,
+            cross_attn_head_mask=None,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
@@ -56,7 +57,9 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
                              use_cache=use_cache,
                              output_attentions=output_attentions,
                              output_hidden_states=output_hidden_states,
-                             return_dict=return_dict, )
+                             return_dict=return_dict,
+                             cross_attn_head_mask=cross_attn_head_mask,
+                             )
 
         if input_ids is None:
             input_ids = self._cache_input_ids
@@ -90,8 +93,15 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
                           encoder_last_hidden_state.mean(dim=1).unsqueeze(dim=-1))  # (batch, decoding_seq, 1)
         p_gen = torch.sigmoid(p_gen)
 
-        lm_logits = F.softmax(lm_logits, dim=-1) * p_gen + copy_logits * (
-                    1 - p_gen)  # (batch_size, decoding_seq_length, emb_dim)
+        lm_logits = F.softmax(lm_logits, dim=-1) * p_gen + copy_logits * (1 - p_gen)  # (batch_size, decoding_seq_length, emb_dim)
+
+        # This is required for for beam search. Training and greedy decoding works fine without it. Beam search takes
+        # logits as input and uses F.log_softmax to compute log probability. As in this implementation, lm_logits in a
+        # probability distribution, not logits, taking log_softmax on this distribution reasults in incorrect values
+        # since values inside lm_logits are already very small (of the order of 1e-19). Ideally, if there were a way to
+        # recover logits, that should be used. But since that is not possible, the next best thing is log.
+        eps = 1e-30
+        lm_logits = (lm_logits + eps).log()
 
         masked_lm_loss = None
         if labels is not None:
@@ -99,9 +109,10 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
             loss_mask = labels != -100
             labels.masked_fill_(~loss_mask, 0)
             # use negative log likelihood
-            gold_probs = torch.gather(lm_logits, 2, labels.unsqueeze(2)).squeeze(2)
-            eps = 1e-7  # for safe log
-            masked_lm_loss = - torch.log(gold_probs + eps) * self._loss_weight[labels]
+            gold_log_probs = torch.gather(lm_logits, 2, labels.unsqueeze(2)).squeeze(2)
+            # eps = 1e-7  # for safe log
+            # masked_lm_loss = - torch.log(gold_probs + eps) * self._loss_weight[labels]
+            masked_lm_loss = - gold_log_probs * self._loss_weight[labels]
             masked_lm_loss = (masked_lm_loss * loss_mask).mean()
 
         if not return_dict:

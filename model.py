@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import AutoModelForSeq2SeqLM
-from transformers import BeamSearchScorer, LogitsProcessorList, NoBadWordsLogitsProcessor
+from transformers import BeamSearchScorer, LogitsProcessorList, NoBadWordsLogitsProcessor, ForcedBOSTokenLogitsProcessor, MaxLengthCriteria
 from generation_bart import CopyConditionalGeneration
 from constants import *
 
@@ -100,40 +100,55 @@ class TextMappingModel(nn.Module):
         From https://huggingface.co/transformers/main_classes/model.html?highlight=beamsearchscorer
         '''
 
-        # list of bad words to prevent the model from predicting these outputs
-        bad_words = [[tokenizer.sep_token_id], [tokenizer.pad_token_id]]
-        logits_processor = NoBadWordsLogitsProcessor(bad_words_ids=bad_words, eos_token_id=tokenizer.eos_token_id)
+        self.bert._cache_input_ids = batch.input_ids.repeat_interleave(num_beams, dim = 0)
+        return self.bert.generate(
+            input_ids = batch.input_ids,
+            attention_mask = batch.attention_masks,
+            max_length = decoding_length,
+            early_stopping = False,
+            num_beams = num_beams,
+            no_repeat_ngram_size = 0,
+        )
 
-        # seems that this is required if our model is a encoder-decoder architecture.
-        model_kwargs = {
-            "encoder_outputs": self.bert.get_encoder()(batch.input_ids.repeat_interleave(num_beams, dim=0),
-                                                       batch.attention_masks.repeat_interleave(num_beams, dim=0),
-                                                       return_dict=True),
-        }
-        # huggingface beamsearch workaround
-        self.bert._cache_input_ids = batch.input_ids
+        # # list of bad words to prevent the model from predicting these outputs
+        # bad_words = [[tokenizer.sep_token_id], [tokenizer.pad_token_id]]
+        # logits_processor = LogitsProcessorList([
+        #     NoBadWordsLogitsProcessor(bad_words_ids=bad_words, eos_token_id=tokenizer.eos_token_id),
+        #     ForcedBOSTokenLogitsProcessor(bos_token_id = tokenizer.bos_token_id),
+        # ])
+        # stopping_criteria = MaxLengthCriteria(max_length = decoding_length)
 
-        # create token for start decoding.
-        decoder_input_ids = torch.ones((num_beams * batch.input_ids.size(0), 1), device=self.bert.device, dtype=torch.long)
-        decoder_input_ids = decoder_input_ids * self.bert.config.decoder_start_token_id
+        # # seems that this is required if our model is a encoder-decoder architecture.
+        # model_kwargs = {
+        #     "encoder_outputs": self.bert.get_encoder()(batch.input_ids.repeat_interleave(num_beams, dim=0),
+        #                                                batch.attention_masks.repeat_interleave(num_beams, dim=0),
+        #                                                return_dict=True),
+        #     "attention_mask": batch.attention_masks,
+        # }
+        # # huggingface beamsearch workaround
+        # self.bert._cache_input_ids = batch.input_ids
 
-        # decoder_input_ids = torch.tensor([self.bert.config.decoder_start_token_id] + batch.decoder_input_chunks[0][0][0], device=self.bert.device, dtype=torch.long)
-        # decoder_input_ids = decoder_input_ids.repeat(num_beams, 1)
+        # # create token for start decoding.
+        # decoder_input_ids = torch.ones((num_beams * batch.input_ids.size(0), 1), device=self.bert.device, dtype=torch.long)
+        # decoder_input_ids = decoder_input_ids * self.bert.config.decoder_start_token_id
 
-        if num_beams == 1:
-            decoded_ids = self.bert.greedy_search(decoder_input_ids, max_length=decoding_length,
-                                    logits_processor=logits_processor, **model_kwargs)
-        else:
-            beam_scorer = BeamSearchScorer(
-            batch_size=batch.input_ids.size(0),
-            max_length=decoding_length,
-            num_beams=num_beams,
-            device=self.bert.device,
-            )
-            decoded_ids = self.bert.beam_search(decoder_input_ids, beam_scorer, max_length=decoding_length,
-                                                logits_processor=logits_processor, **model_kwargs)
+        # # decoder_input_ids = torch.tensor([self.bert.config.decoder_start_token_id] + batch.decoder_input_chunks[0][0][0], device=self.bert.device, dtype=torch.long)
+        # # decoder_input_ids = decoder_input_ids.repeat(num_beams, 1)
 
-        return decoded_ids
+        # if num_beams == 1:
+        #     decoded_ids = self.bert.greedy_search(decoder_input_ids, stopping_criteria = stopping_criteria,
+        #                             logits_processor=logits_processor, **model_kwargs)
+        # else:
+        #     beam_scorer = BeamSearchScorer(
+        #     batch_size=batch.input_ids.size(0),
+        #     max_length=decoding_length,
+        #     num_beams=num_beams,
+        #     device=self.bert.device,
+        #     )
+        #     decoded_ids = self.bert.beam_search(decoder_input_ids, beam_scorer, max_length=decoding_length,
+        #                                         logits_processor=logits_processor, **model_kwargs)
+
+        # return decoded_ids
 
     def predict(self, batch, tokenizer, epoch=None, beam_size=1):
         self.eval()
@@ -141,8 +156,8 @@ class TextMappingModel(nn.Module):
         with torch.no_grad():
 
             decoding_length = self.max_position_embeddings - 1
-            if epoch is not None and epoch < 10:
-                decoding_length = 10
+            # if epoch is not None and epoch < 10:
+            #     decoding_length = 10
 
             # Mask the tokens that are not present in the input document.
             # Only tokens in input document and the special tokens can be decoded.
