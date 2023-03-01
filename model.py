@@ -100,7 +100,7 @@ class TextMappingModel(nn.Module):
         From https://huggingface.co/transformers/main_classes/model.html?highlight=beamsearchscorer
         '''
 
-        self.bert._cache_input_ids = batch.input_ids.repeat(num_beams, 1)
+        self.bert._cache_input_ids = batch.input_ids.repeat_interleave(num_beams, dim = 0)
         return self.bert.generate(
             input_ids = batch.input_ids,
             attention_mask = batch.attention_masks,
