@@ -13,7 +13,6 @@ def collate_score_declarations(pred_texts: List[str],
                                 doc_ids: List[str],
                                 order_mappings: List[Dict],
                                 print_errors=True,
-                                natural_parsing=False,
                                 per_declaration=False) -> float:
     current_id = ''
     current_pred_problem = ''
@@ -27,13 +26,10 @@ def collate_score_declarations(pred_texts: List[str],
 
     # converts an output into canonical form and returns the canonical form along with the order mapping
     # please ensure that the order mapping is consistent between pred and gold or the columns may be incorrect in the canonical form
-    def parse_convert(output: str, order_mapping: Dict, natural_parsing) -> parsers.CanonicalFormulation:
-        if natural_parsing:
-            parser = parsers.NaturalLikeLanguageParser(print_errors=print_errors)
-        else:
-            parser = parsers.ModelOutputXMLParser(print_errors=print_errors)
+    def parse_convert(output: str, order_mapping: Dict, is_gold: bool) -> parsers.CanonicalFormulation:
+        parser = parsers.ModelOutputXMLParser(print_errors=print_errors)
         parsed = parser.parse(output, order_mapping)
-        return parsers.convert_to_canonical(parsed)
+        return parsers.convert_to_canonical(parsed, is_gold = is_gold)
 
     # we append as we do our predictions on the declaration level, i.e., we keep appending declarations until we get to the next problem
     # loop assumes that same doc_ids are contiguous
@@ -68,8 +64,8 @@ def collate_score_declarations(pred_texts: List[str],
         # use gold's order mapping in prediction for consistency in producing canonical form
         # print(f"pred: {pred}")
         # print(f"gold: {gold}")
-        gold_canonical = parse_convert(gold, order_mapping, natural_parsing)
-        pred_canonical = parse_convert(pred, order_mapping, natural_parsing)
+        gold_canonical = parse_convert(gold, order_mapping, is_gold = True)
+        pred_canonical = parse_convert(pred, order_mapping, is_gold = False)
         # print(f"gold_canonical: {gold_canonical}\npred_canonical: {pred_canonical}")
         # import sys; sys.exit(0)
         pred_canonicals.append(pred_canonical)
@@ -94,7 +90,6 @@ def evaluate(tokenizer,
                 tqdm_descr="Dataset",
                 ckpt_basename = "",
                 print_errors=True,
-                natural_parsing=False,
                 beam_size=1,
                 per_declaration=False):
 
@@ -108,7 +103,7 @@ def evaluate(tokenizer,
         progress.update(1)
         outputs = model.predict(batch, tokenizer, epoch=epoch, beam_size=beam_size)
         # decoder_inputs_outputs = generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, config.max_position_embeddings)
-        decoder_inputs_outputs = generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, config.max_position_embeddings, replace_pad_tokens=False, natural_parsing=natural_parsing)
+        decoder_inputs_outputs = generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, config.max_position_embeddings, replace_pad_tokens=False)
         pred_outputs.extend(outputs['decoded_ids'].tolist())
         gold_outputs.extend(decoder_inputs_outputs['decoder_labels'].tolist())
         input_tokens.extend(batch.input_tokens)
@@ -131,7 +126,7 @@ def evaluate(tokenizer,
             "document": batch.document[0],
         })
     progress.close()
-    accuracy = collate_score_declarations(pred_texts, gold_texts,doc_ids,order_mappings, print_errors, natural_parsing, per_declaration)
+    accuracy = collate_score_declarations(pred_texts, gold_texts,doc_ids,order_mappings, print_errors, per_declaration)
 
     result = {
         'accuracy': accuracy,

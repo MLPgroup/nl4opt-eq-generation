@@ -23,7 +23,7 @@ Batch = namedtuple('Batch', field_names=batch_fields,
 
 
 class LPMappingDataset(Dataset):
-    def __init__(self, path, max_length=128, gpu=False, no_prompt=False, enrich_ner=False, natural_parsing=False):
+    def __init__(self, path, max_length=128, gpu=False, no_prompt=False, enrich_ner=False):
         """
         :param path (str): path to the data file.
         :param max_length (int): max sentence length.
@@ -36,7 +36,6 @@ class LPMappingDataset(Dataset):
         self.gpu = gpu
         self.no_prompt = no_prompt
         self.enrich_ner = enrich_ner
-        self.natural_parsing = natural_parsing
 
         self.load_data()
 
@@ -89,20 +88,15 @@ class LPMappingDataset(Dataset):
         for template in templates:
 
             # convert template to list of typed chunks
-            if not self.natural_parsing:
-                typed_fragments = format_typed_mention(template)
-                encoded_typed_fragments = []
-                for fragment in typed_fragments:
-                    assert isinstance(fragment, list)
-                    # entity = []
-                    encoded_fragment = []
-                    for entity_token in fragment:
-                        encoded_fragment += token2sub_tokens(tokenizer, entity_token)
-                    encoded_typed_fragments.append(encoded_fragment)
-            else:
-                typed_fragments = canonicalize_template(template)
-                encoded_typed_fragments = token2sub_tokens(tokenizer, typed_fragments)
-
+            typed_fragments = format_typed_mention(template)
+            encoded_typed_fragments = []
+            for fragment in typed_fragments:
+                assert isinstance(fragment, list)
+                # entity = []
+                encoded_fragment = []
+                for entity_token in fragment:
+                    encoded_fragment += token2sub_tokens(tokenizer, entity_token)
+                encoded_typed_fragments.append(encoded_fragment)
             res.append(encoded_typed_fragments)
         return res
 

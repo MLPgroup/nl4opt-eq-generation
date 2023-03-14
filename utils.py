@@ -13,7 +13,8 @@ def format_typed_mention(template):
     mentions = []
     if t == "objective" or t == "objvar":
         if "direction" in template and template["direction"] is not None:
-            mentions.append([START_OF_OBJ_DIR, " " + template["direction"].strip(" ") +" ", END_OF_OBJ_DIR])
+            objdir = OBJ_DIR_DICT[template["direction"].strip(" ")]
+            mentions.append([START_OF_OBJ_DIR, " " + objdir + " ", END_OF_OBJ_DIR])
         if "name" in template and template["name"] is not None:
             mentions.append([START_OF_OBJ_NAME, " " + template["name"].strip(" ") + " ", END_OF_OBJ_NAME])
         if "terms" in template:
@@ -164,7 +165,7 @@ def format_inputs_outputs(flattened_seqs, tokenizer, use_gpu, max_position_embed
     return res
 
 
-def generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, max_position_embeddings, replace_pad_tokens=True, natural_parsing=False):
+def generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, max_position_embeddings, replace_pad_tokens=True):
     '''
     Process decoder_input_chunks and produce a dictionary with keys decoder_input_ids and decoder_labels.
     decoder_input_chunks is a list where each element correspond to annotation of a document.
@@ -184,11 +185,8 @@ def generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu, max_positi
         for template in decoder_input_chunk: # decoder_input_chunk: 3D, template: 2D
             flatten_entities.append(tokenizer.convert_tokens_to_ids(START_OF_TEMPLATE))
             for entity in template: # template 2D,
-                if natural_parsing:
-                    flatten_entities.append(entity)
-                else:
-                    for sub_token in entity:
-                        flatten_entities.append(sub_token)
+                for sub_token in entity:
+                    flatten_entities.append(sub_token)
             flatten_entities.append(tokenizer.convert_tokens_to_ids(END_OF_TEMPLATE))
         flattened_seq = [model.bert.config.decoder_start_token_id, tokenizer.bos_token_id] + flatten_entities + [
             tokenizer.eos_token_id]
