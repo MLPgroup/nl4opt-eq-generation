@@ -89,9 +89,9 @@ train_set = None
 print('============== Prepare Test Set: starting =================')
 vocabs = {}
 if config.per_declaration:
-    test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
+    test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 else:
-    test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
+    test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 test_set.numberize(tokenizer, vocabs)
 print('============== Prepare Test Set: finished =================')
 
@@ -122,7 +122,6 @@ test_result = test_utils.evaluate(
         config,
         tqdm_descr='Test',
         ckpt_basename=ckpt_basename,
-        natural_parsing=config.natural_parsing,
         beam_size=args.beam_size,
         per_declaration=config.per_declaration,
     )

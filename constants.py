@@ -23,7 +23,6 @@ PLUS_TOKEN = '[plus]'
 FOR_TOKEN = '[for]'
 
 ONE_TOKEN = 'ONE'
-EMPTY_TOKEN = 'EMPTY'
 
 TYPE_UPPER_BOUND = "[UPPER_BOUND]"
 TYPE_LOWER_BOUND = "[LOWER_BOUND]"
@@ -32,6 +31,8 @@ TYPE_LINEAR_CONST = "[LINEAR_CONSTRAINT]"
 TYPE_RATIO_CONST = "[RATIO_CONSTRAINT]"
 TYPE_XBY_CONST = "[XBY_CONSTRAINT]"
 TYPE_XY_CONST = "[XY_CONSTRAINT]"
+OBJ_DIR_MINIMIZE = "minimize"
+OBJ_DIR_MAXIMIZE = "maximize"
 
 SPECIAL_TOKENS = [
     START_OF_TEMPLATE, END_OF_TEMPLATE,
@@ -55,9 +56,22 @@ SPECIAL_TOKENS = [
     TYPE_XBY_CONST,
     TYPE_XY_CONST,
     ONE_TOKEN,
-    # EMPTY_TOKEN,
 ]
 
-
-
-
+OBJ_DIR_DICT = {
+    'Minimize': OBJ_DIR_MINIMIZE,
+    'decrease': OBJ_DIR_MINIMIZE,
+    'highest': OBJ_DIR_MAXIMIZE,
+    'lowest': OBJ_DIR_MINIMIZE,
+    'maximize': OBJ_DIR_MAXIMIZE,
+    'maximized': OBJ_DIR_MAXIMIZE,
+    'maximizing': OBJ_DIR_MAXIMIZE,
+    'maximum': OBJ_DIR_MAXIMIZE,
+    'minimal': OBJ_DIR_MINIMIZE,
+    'minimize': OBJ_DIR_MINIMIZE,
+    'minimizes': OBJ_DIR_MINIMIZE,
+    'minimizing': OBJ_DIR_MINIMIZE,
+    'minimum': OBJ_DIR_MINIMIZE,
+    'most': OBJ_DIR_MAXIMIZE,
+    'reduce': OBJ_DIR_MINIMIZE,
+}

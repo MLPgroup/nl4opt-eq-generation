@@ -89,9 +89,9 @@ if config.per_declaration:
     #                                      no_prompt=(not config.use_prompt))
 else:
     print('==============Prepare Training Set=================')
-    train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
+    train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
     print('==============Prepare Dev Set=================')
-    dev_set = LPMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner, natural_parsing=config.natural_parsing)
+    dev_set = LPMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
     # print('==============Prepare Test Set=================')
     # test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 
@@ -176,8 +176,7 @@ for epoch in range(config.max_epoch):
 
         decoder_inputs_outputs = generate_decoder_inputs_outputs(batch, tokenizer, model, use_gpu,
                                                                  config.max_position_embeddings,
-                                                                 replace_pad_tokens=config.use_copy,
-                                                                 natural_parsing=config.natural_parsing)
+                                                                 replace_pad_tokens=config.use_copy)
         decoder_input_ids = decoder_inputs_outputs['decoder_input_ids']
 
         decoder_labels = decoder_inputs_outputs['decoder_labels']
@@ -237,7 +236,6 @@ for epoch in range(config.max_epoch):
             config,
             tqdm_descr='Dev {}'.format(epoch),
             print_errors=False,
-            natural_parsing=config.natural_parsing,
             per_declaration=config.per_declaration,
         )
 

@@ -38,5 +38,5 @@
     "use_gpu": true,
     "gpu_device": 0,
     "seed": 13,
-    "run_name": "default"
+    "run_name": "default_base"
 }
