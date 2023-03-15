@@ -22,7 +22,7 @@
     "max_length": 256,
 
     "output_path": "output/default_base_nocopy",
-    "use_copy": true,
+    "use_copy": false,
     "per_declaration" : false,
     "enrich_ner": true,
 
