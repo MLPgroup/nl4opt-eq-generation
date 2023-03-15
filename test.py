@@ -49,11 +49,6 @@ if args.test_file:
 # set GPU device
 config.gpu_device = args.gpu
 config.use_gpu = use_gpu
-# fix random seed
-random.seed(config.seed)
-np.random.seed(config.seed)
-torch.manual_seed(config.seed)
-torch.backends.cudnn.enabled = False
 
 if use_gpu and config.gpu_device >= 0:
     torch.cuda.set_device(config.gpu_device)

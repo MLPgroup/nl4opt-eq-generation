@@ -100,10 +100,9 @@ class LPMappingDataset(Dataset):
             res.append(encoded_typed_fragments)
         return res
 
-    def numberize(self, tokenizer, vocabs):
+    def numberize(self, tokenizer):
         """Numberize word pieces, labels, etcs.
         :param tokenizer: Bert tokenizer.
-        :param vocabs (dict): a dict of vocabularies.
         """
 
         data = []
@@ -226,8 +225,8 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base",
                                               cache_dir="./bert")
     tokenizer.add_tokens(SPECIAL_TOKENS)
-    train_set.numberize(tokenizer, vocabs={})
-    dev_set.numberize(tokenizer, vocabs={})
+    train_set.numberize(tokenizer)
+    dev_set.numberize(tokenizer)
     assert len(dev_set.data) == 1
     assert isinstance(dev_set[0], Instance)
 

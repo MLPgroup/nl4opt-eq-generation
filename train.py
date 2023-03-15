@@ -24,20 +24,19 @@ parser.add_argument('-c', '--config', default='configs/default.json')
 parser.add_argument('--seed', type=int, default=None)
 args = parser.parse_args()
 config = Config.from_json_file(args.config)
-if args.seed is not None:
-    config.seed = args.seed
 
 print(config.to_dict())
 
 # fix random seed
-os.environ['PYTHONHASHSEED'] = str(config.seed)
-random.seed(config.seed)
-np.random.seed(config.seed)
-torch.manual_seed(config.seed)
-torch.cuda.manual_seed_all(config.seed)
-set_seed(config.seed)
-torch.backends.cudnn.enabled = False
-torch.use_deterministic_algorithms(True)
+if args.seed is not None:
+    os.environ['PYTHONHASHSEED'] = str(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    set_seed(args.seed)
+    torch.backends.cudnn.enabled = False
+    torch.use_deterministic_algorithms(True)
 
 # increase recursion limit
 max_length = int(config.max_length)
@@ -84,26 +83,16 @@ if config.per_declaration:
     print('==============Prepare Dev Set=================')
     dev_set = DeclarationMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu,
                                         no_prompt=(not config.use_prompt), enrich_ner=config.enrich_ner)
-    # print('==============Prepare Test Set=================')
-    # test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu,
-    #                                      no_prompt=(not config.use_prompt))
 else:
     print('==============Prepare Training Set=================')
     train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
     print('==============Prepare Dev Set=================')
     dev_set = LPMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
-    # print('==============Prepare Test Set=================')
-    # test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
-
-
-vocabs = {}
 
 print('==============Prepare Training Set=================')
-train_set.numberize(tokenizer, vocabs)
+train_set.numberize(tokenizer)
 print('==============Prepare Dev Set=================')
-dev_set.numberize(tokenizer, vocabs)
-# print('==============Prepare Test Set=================')
-# test_set.numberize(tokenizer, vocabs)
+dev_set.numberize(tokenizer)
 
 # TODO: define dev and test golds
 
@@ -116,7 +105,7 @@ dev_batch_num = len(dev_set) // config.eval_batch_size + \
 
 # initialize the model
 
-model = TextMappingModel(config, vocabs)
+model = TextMappingModel(config)
 
 model.load_bert(model_name, cache_dir=config.bert_cache_dir, tokenizer=tokenizer)
 
@@ -128,34 +117,13 @@ if use_gpu:
     model.cuda(device=config.gpu_device)
 
 # optimizer
-if model.bert.config.name_or_path.startswith('t5'):
-    param_groups = [
-        {
-            'params': [p for n, p in model.named_parameters() if n.startswith('bert')],
-            'lr': config.bert_learning_rate, 'weight_decay': config.bert_weight_decay
-        },
-        {
-            'params': [p for n, p in model.named_parameters() if not n.startswith('bert')
-                    and 'crf' not in n and 'global_feature' not in n],
-            'lr': config.learning_rate, 'weight_decay': config.weight_decay
-        },
-        {
-            'params': [p for n, p in model.named_parameters() if not n.startswith('bert')
-                    and ('crf' in n or 'global_feature' in n)],
-            'lr': config.learning_rate, 'weight_decay': 0
-        }
-    ]
-    optimizer = Adafactor(params=param_groups)
-else:
-    optimizer = AdamW(params=model.parameters(), lr = config.bert_learning_rate, weight_decay = config.bert_weight_decay)
+optimizer = AdamW(params=model.parameters(), lr = config.learning_rate, weight_decay = config.weight_decay)
 schedule = get_linear_schedule_with_warmup(optimizer,
                                            num_warmup_steps=batch_num * config.warmup_epoch,
                                            num_training_steps=batch_num * config.max_epoch)
 
 # model state
-state = dict(model=model.state_dict(),
-             config=config.to_dict(),
-             vocabs=vocabs)
+state = dict(model=model.state_dict(), config=config.to_dict())
 
 best_dev = -np.inf
 current_step = 0
@@ -193,16 +161,14 @@ for epoch in range(config.max_epoch):
 
         if (batch_idx + 1) % config.accumulate_step == 0:
             progress.update(1)
-            torch.nn.utils.clip_grad_norm_(
-                model.parameters(), config.grad_clipping)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clipping)
             optimizer.step()
             schedule.step()
             optimizer.zero_grad()
     # train the last batch
     if batch_num % config.accumulate_step != 0:
         progress.update(1)
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), config.grad_clipping)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clipping)
         optimizer.step()
         schedule.step()
         optimizer.zero_grad()
@@ -249,36 +215,14 @@ for epoch in range(config.max_epoch):
             best_epoch = epoch
             best_score = dev_result['accuracy']
             print("Saving model with best dev set accuracy:", dev_result['accuracy'])
-            state = dict(model=model.state_dict(),
-                         config=config.to_dict(),
-                         vocabs=vocabs)
+            state = dict(model=model.state_dict(), config=config.to_dict())
             model_output_path = os.path.join(output_dir, 'best-checkpoint.mdl')
             torch.save(state, model_output_path)
 
         # Save last checkpoint
-        state = dict(model=model.state_dict(),
-                        config=config.to_dict(),
-                        vocabs=vocabs)
+        state = dict(model=model.state_dict(), config=config.to_dict())
         model_output_path = os.path.join(output_dir, 'checkpoint-last.mdl')
         torch.save(state, model_output_path)
-
-        # # run predictions on test set
-
-        # # set print_errors to false as model is not expected to make correct syntax on early epochs
-        # test_result = test_utils.evaluate(
-        #     tokenizer,
-        #     model,
-        #     test_set,
-        #     epoch,
-        #     test_batch_num,
-        #     use_gpu,
-        #     config,
-        #     tqdm_descr='Test {}'.format(epoch),
-        #     print_errors=False
-        # )
-
-        # with open(test_result_file + f'_{epoch}', 'w') as f:
-        #     f.write(json.dumps(test_result))
 
         print('Log file', log_file)
 

@@ -1,12 +1,12 @@
 {
-    "accumulate_step": 2,
-    "batch_size": 16,
-    "eval_batch_size": 16,
+    "accumulate_step": 1,
+    "batch_size": 32,
+    "eval_batch_size": 32,
     "eval_period": 1,
 
     "bert_cache_dir": ".cache/bert",
     "learning_rate": 5e-05,
-    "bert_model_name": "facebook/bart-large",
+    "bert_model_name": "facebook/bart-base",
     "weight_decay": 1e-05,
 
     "train_file": "data/train.jsonl",
@@ -15,16 +15,16 @@
     "SOT_weights":5,
     "max_position_embeddings":256,
     "grad_clipping": 1.0,
-    "log_path": "log/default",
+    "log_path": "log/default_base_perdeclr",
     "k":10,
     "max_epoch": 400,
     "warmup_epoch": 5,
     "max_length": 256,
 
-    "output_path": "output/default",
+    "output_path": "output/default_base_perdeclr",
     "use_copy": true,
-    "per_declaration" : false,
-    "enrich_ner": false,
+    "per_declaration" : true,
+    "enrich_ner": true,
 
     "use_gpu": true,
     "gpu_device": 0

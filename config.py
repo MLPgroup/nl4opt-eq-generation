@@ -11,28 +11,16 @@ class Config(object):
         # bert
         self.bert_model_name = kwargs.pop('bert_model_name', 'bert-large-cased')
         self.bert_cache_dir = kwargs.pop('bert_cache_dir', None)
-        self.extra_bert = kwargs.pop('extra_bert', -1)
-        self.use_extra_bert = kwargs.pop('use_extra_bert', False)
-        # model
-        # self.multi_piece_strategy = kwargs.pop('multi_piece_strategy', 'first')
-        self.bert_dropout = kwargs.pop('bert_dropout', .5)
-        self.linear_dropout = kwargs.pop('linear_dropout', .4)
-        self.linear_bias = kwargs.pop('linear_bias', True)
-        self.linear_activation = kwargs.pop('linear_activation', 'relu')
 
         # mapping supervision
         self.per_declaration = kwargs.pop('per_declaration', False)
 
         # decoding
         self.max_position_embeddings = kwargs.pop('max_position_embeddings', 2048)
-        self.num_beams = kwargs.pop('num_beams', 4)
-        self.decoding_method = kwargs.pop('decoding_method', "greedy")
 
         # files
         self.train_file = kwargs.pop('train_file', None)
         self.dev_file = kwargs.pop('dev_file', None)
-        self.test_file = kwargs.pop('test_file', None)
-        self.valid_pattern_path = kwargs.pop('valid_pattern_path', None)
         self.log_path = kwargs.pop('log_path', './log')
         self.output_path = kwargs.pop('output_path', './output')
 
@@ -43,10 +31,8 @@ class Config(object):
         self.eval_period = kwargs.pop('eval_period', 1)
         self.max_epoch = kwargs.pop('max_epoch', 50)
         self.max_length = kwargs.pop('max_length', 128)
-        self.learning_rate = kwargs.pop('learning_rate', 1e-3)
-        self.bert_learning_rate = kwargs.pop('bert_learning_rate', 1e-5)
-        self.weight_decay = kwargs.pop('weight_decay', 0.001)
-        self.bert_weight_decay = kwargs.pop('bert_weight_decay', 0.00001)
+        self.learning_rate = kwargs.pop('learning_rate', 5e-5)
+        self.weight_decay = kwargs.pop('weight_decay', 1e-5)
         self.warmup_epoch = kwargs.pop('warmup_epoch', 5)
         self.grad_clipping = kwargs.pop('grad_clipping', 5.0)
         self.SOT_weights = kwargs.pop('SOT_weights', 100)
@@ -54,7 +40,6 @@ class Config(object):
         # others
         self.use_gpu = kwargs.pop('use_gpu', True)
         self.gpu_device = kwargs.pop('gpu_device', 0)
-        self.seed = kwargs.pop('seed', 0)
         self.use_copy = kwargs.pop('use_copy', False)
         self.k = kwargs.pop('k', 12)
         self.enrich_ner = kwargs.pop('enrich_ner', False)
@@ -90,10 +75,4 @@ class Config(object):
             w.write(json.dumps(self.to_dict(), indent=2,
                                sort_keys=True))
 
-    @property
-    def bert_config(self):
-
-        return AutoConfig.from_pretrained(self.bert_model_name,
-                                          cache_dir=self.bert_cache_dir,
-                                          max_position_embeddings=self.max_position_embeddings)
 

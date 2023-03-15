@@ -9,10 +9,9 @@ from transformers import AutoTokenizer
 from data import LPMappingDataset, instance_fields, batch_fields, Instance, Batch
 
 class DeclarationMappingDataset(LPMappingDataset):
-    def numberize(self, tokenizer, vocabs):
+    def numberize(self, tokenizer):
         """Numberize word pieces, labels, etcs.
         :param tokenizer: Bert tokenizer.
-        :param vocabs (dict): a dict of vocabularies.
         """
 
         data = []
@@ -109,8 +108,8 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained("facebook/bart-base",
                                               cache_dir="./bert")
     tokenizer.add_tokens(SPECIAL_TOKENS)
-    train_set.numberize(tokenizer, vocabs={})
-    dev_set.numberize(tokenizer, vocabs={})
+    train_set.numberize(tokenizer)
+    dev_set.numberize(tokenizer)
     assert len(dev_set.data) == 6
 
 
