@@ -1,6 +1,6 @@
 {
     "accumulate_step": 2,
-    "batch_size": 4,
+    "batch_size": 16,
     "eval_batch_size": 16,
     "eval_period": 1,
 
