@@ -25,10 +25,9 @@ parser.add_argument('--seed', type=int, default=None)
 args = parser.parse_args()
 config = Config.from_json_file(args.config)
 
-print(config.to_dict())
-
 # fix random seed
 if args.seed is not None:
+    config.seed = args.seed
     os.environ['PYTHONHASHSEED'] = str(args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -37,6 +36,8 @@ if args.seed is not None:
     set_seed(args.seed)
     torch.backends.cudnn.enabled = False
     torch.use_deterministic_algorithms(True)
+
+print(f"Config: {config.to_dict()}")
 
 # increase recursion limit
 max_length = int(config.max_length)

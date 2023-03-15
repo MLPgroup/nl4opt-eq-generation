@@ -43,6 +43,7 @@ class Config(object):
         self.use_copy = kwargs.pop('use_copy', False)
         self.k = kwargs.pop('k', 12)
         self.enrich_ner = kwargs.pop('enrich_ner', False)
+        self.seed = None # Taken from command line args
 
     @classmethod
     def from_dict(cls, dict_obj):
