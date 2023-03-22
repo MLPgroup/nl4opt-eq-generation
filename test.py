@@ -82,17 +82,16 @@ os.makedirs(os.path.join(output_dir, 'results', ckpt_basename), exist_ok=True)
 train_set = None
 
 print('============== Prepare Test Set: starting =================')
-vocabs = {}
 if config.per_declaration:
     test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 else:
     test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
-test_set.numberize(tokenizer, vocabs)
+test_set.numberize(tokenizer)
 print('============== Prepare Test Set: finished =================')
 
 
 # initialize the model
-model = TextMappingModel(config, vocabs)
+model = TextMappingModel(config)
 model.load_bert(model_name, cache_dir=config.bert_cache_dir, tokenizer=tokenizer)
 if not model_name.startswith('roberta'):
     model.bert.resize_token_embeddings(len(tokenizer))

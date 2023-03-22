@@ -82,7 +82,7 @@ def convert_to_canonical(formulation: ProblemFormulation, is_gold: bool) -> Cano
         # do nothing
         objective = objective
     else:
-        assert not is_gold, f"Gold problem formulation has unsupported objective direction {formulation.objective.direction}"
+        assert not is_gold, f"Gold problem formulation has unsupported objective direction {formulation}"
         objective *= 0
 
     for constraint in formulation.constraints:

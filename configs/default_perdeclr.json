@@ -5,9 +5,9 @@
     "eval_period": 1,
 
     "bert_cache_dir": ".cache/bert",
-    "learning_rate": 5e-05,
+    "learning_rate": 2e-05,
     "bert_model_name": "facebook/bart-large",
-    "weight_decay": 1e-05,
+    "weight_decay": 1e-03,
 
     "train_file": "data/train.jsonl",
     "dev_file": "data/dev.jsonl",
@@ -19,7 +19,7 @@
     "k":10,
     "max_epoch": 400,
     "warmup_epoch": 5,
-    "max_length": 256,
+    "max_length": 512,
 
     "output_path": "output/default_perdeclr",
     "use_copy": true,

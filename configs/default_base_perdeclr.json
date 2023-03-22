@@ -19,7 +19,7 @@
     "k":10,
     "max_epoch": 400,
     "warmup_epoch": 5,
-    "max_length": 256,
+    "max_length": 512,
 
     "output_path": "output/default_base_perdeclr",
     "use_copy": true,

@@ -34,13 +34,13 @@ def collate_score_declarations(pred_texts: List[str],
     # we append as we do our predictions on the declaration level, i.e., we keep appending declarations until we get to the next problem
     # loop assumes that same doc_ids are contiguous
     # models that predict the entire formulation at once should not use this loop
-    for pred, gold, doc_id, order_mapping in zip(pred_texts, gold_texts,doc_ids,order_mappings):
+    for idx, (pred, gold, doc_id, order_mapping) in enumerate(zip(pred_texts, gold_texts,doc_ids,order_mappings)):
         if per_declaration:
             if current_id != doc_id:
                 # append order mapping of new problem
                 mappings.append(order_mapping)
                 current_id = doc_id
-                if current_pred_problem and current_gold_problem:
+                if idx > 0:
                     # append texts of previous problem
                     gold_problems.append(current_gold_problem)
                     pred_problems.append(current_pred_problem)
@@ -59,7 +59,7 @@ def collate_score_declarations(pred_texts: List[str],
         gold_problems.append(current_gold_problem)
         pred_problems.append(current_pred_problem)
 
-    print(f"gold_problems: {len(gold_problems)}\npred_problems: {len(pred_problems)}\norder_mappings: {len(order_mappings)}")
+    print(f"gold_problems: {len(gold_problems)}\npred_problems: {len(pred_problems)}\norder_mappings: {len(mappings)}")
     for pred, gold, order_mapping in zip(pred_problems, gold_problems, mappings):
         # use gold's order mapping in prediction for consistency in producing canonical form
         # print(f"pred: {pred}")

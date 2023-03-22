@@ -80,10 +80,10 @@ tokenizer.add_tokens(SPECIAL_TOKENS)
 if config.per_declaration:
     print('==============Prepare Training Set=================')
     train_set = DeclarationMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu,
-                                          no_prompt=(not config.use_prompt), enrich_ner=config.enrich_ner)
+                                          enrich_ner=config.enrich_ner)
     print('==============Prepare Dev Set=================')
     dev_set = DeclarationMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu,
-                                        no_prompt=(not config.use_prompt), enrich_ner=config.enrich_ner)
+                                        enrich_ner=config.enrich_ner)
 else:
     print('==============Prepare Training Set=================')
     train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
@@ -152,6 +152,7 @@ for epoch in range(config.max_epoch):
         decoder_masks = decoder_inputs_outputs['decoder_masks']
 
         loss = model(batch, decoder_input_ids, decoder_labels, tokenizer=tokenizer)['loss']
+        print(f"train_loss: {loss}")
         current_step += 1
         loss = loss * (1 / config.accumulate_step)
         training_loss += loss.item()
