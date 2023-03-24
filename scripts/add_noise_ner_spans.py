@@ -58,8 +58,11 @@ def main():
     parser.add_argument("--dataset_file", type = str, required = True)
     parser.add_argument("--out_file", type = str, required = True)
     parser.add_argument("--prob", type = float, default = 0.15)
+    parser.add_argument("--seed", type = int, default = 42)
 
     args = parser.parse_args()
+
+    random.set_seed(args.seed)
 
     ner_predictor = AddNERSpanNoise(
         dataset_file = args.dataset_file,
