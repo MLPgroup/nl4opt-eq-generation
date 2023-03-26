@@ -62,7 +62,7 @@ def main():
 
     args = parser.parse_args()
 
-    random.set_seed(args.seed)
+    random.seed(args.seed)
 
     ner_predictor = AddNERSpanNoise(
         dataset_file = args.dataset_file,
