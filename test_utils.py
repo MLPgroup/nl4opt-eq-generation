@@ -59,7 +59,9 @@ def collate_score_declarations(pred_texts: List[str],
         gold_problems.append(current_gold_problem)
         pred_problems.append(current_pred_problem)
 
-    print(f"gold_problems: {len(gold_problems)}\npred_problems: {len(pred_problems)}\norder_mappings: {len(mappings)}")
+    if print_errors:
+        print(f"gold_problems: {len(gold_problems)}\npred_problems: {len(pred_problems)}\norder_mappings: {len(mappings)}")
+
     for pred, gold, order_mapping in zip(pred_problems, gold_problems, mappings):
         # use gold's order mapping in prediction for consistency in producing canonical form
         # print(f"pred: {pred}")
@@ -120,11 +122,16 @@ def evaluate(tokenizer,
         pred_texts.extend(pred_txt)
         gold_texts.extend(gold_txt)
 
-        gold_pred_pairs.append({
-            "gold": gold_txt,
-            "pred": pred_txt,
-            "document": batch.document[0],
-        })
+        for pt, gt, doc_id, order_mapping, doc in zip(pred_txt, gold_txt, batch.doc_ids, batch.order_mapping, batch.document):
+            gold_pred_pairs.append({
+                "gold": gt,
+                "pred": pt,
+                "document": doc,
+                "doc_id": doc_id,
+                "order_mapping": order_mapping,
+                "accuracy": collate_score_declarations([pt], [gt], [doc_id], [order_mapping], False, per_declaration)
+            })
+
     progress.close()
     accuracy = collate_score_declarations(pred_texts, gold_texts,doc_ids,order_mappings, print_errors, per_declaration)
 

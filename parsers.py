@@ -109,6 +109,7 @@ def convert_to_canonical(formulation: ProblemFormulation, is_gold: bool) -> Cano
                 row[-1] = np.nan
         elif constraint.type == const.LINEAR_CONSTRAINT:
             # 2x + 3y <= 20
+            row *= 0
             for k, v in constraint.terms.items():
                 # check if value was given in formulation
                 row[v.index] = v.value if v.value is not None else np.nan
