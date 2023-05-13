@@ -152,7 +152,7 @@ for epoch in range(config.max_epoch):
         decoder_masks = decoder_inputs_outputs['decoder_masks']
 
         loss = model(batch, decoder_input_ids, decoder_labels, tokenizer=tokenizer)['loss']
-        print(f"train_loss: {loss}")
+        # print(f"train_loss: {loss}")
         current_step += 1
         loss = loss * (1 / config.accumulate_step)
         training_loss += loss.item()

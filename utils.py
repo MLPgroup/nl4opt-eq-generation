@@ -120,6 +120,8 @@ def token2sub_tokens(tokenizer, token):
 
 def format_inputs_outputs(flattened_seqs, tokenizer, use_gpu, max_position_embeddings, replace_pad_tokens):
     max_seq_len = max([len(seq) for seq in flattened_seqs])
+    assert max_seq_len <= max_position_embeddings, f"max_seq_len: {max_seq_len}, max_position_embeddings: {max_position_embeddings}"
+
     max_seq_len = min(max_position_embeddings, max_seq_len)
 
     # create padding & mask

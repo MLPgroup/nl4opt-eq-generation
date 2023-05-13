@@ -110,7 +110,7 @@ class LPMappingDataset(Dataset):
             document = self.get_document(content) # ['document']
             order_mapping = content.get('order_mapping', None)
 
-            input_ids = tokenizer([document], max_length=self.max_length, truncation=True)['input_ids'][0]
+            input_ids = tokenizer([document])['input_ids'][0]
 
             pad_num = self.max_length - len(input_ids)
             attn_mask = [1] * len(input_ids) + [0] * pad_num
