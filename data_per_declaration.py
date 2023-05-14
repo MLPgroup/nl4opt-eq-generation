@@ -9,7 +9,7 @@ from transformers import AutoTokenizer
 from data import LPMappingDataset, instance_fields, batch_fields, Instance, Batch
 
 class DeclarationMappingDataset(LPMappingDataset):
-    def numberize(self, tokenizer):
+    def numberize(self):
         """Numberize word pieces, labels, etcs.
         :param tokenizer: Bert tokenizer.
         """
@@ -19,13 +19,13 @@ class DeclarationMappingDataset(LPMappingDataset):
             document = self.get_document(content)# ['document']
             order_mapping = content['order_mapping']
 
-            orig_input_ids = tokenizer([document], max_length=self.max_length, truncation=True)['input_ids'][0]
+            orig_input_ids = self.tokenizer([document], max_length=self.max_length, truncation=True)['input_ids'][0]
 
-            decoder_input_chunks = self.create_decoder_input_chunks(content, tokenizer)
+            decoder_input_chunks = self.create_decoder_input_chunks(content, self.tokenizer)
             const_triggers = [START_OF_CONST_DIR + " " + x['text'].strip(" ") + " " + END_OF_CONST_DIR for x in content['spans'] if x['label'] == 'CONST_DIR' and 'text' in x]
             obj_triggers = [START_OF_OBJ_DIR + " " + x['text'].strip(" ") + " " + END_OF_OBJ_DIR for x in content['spans'] if x['label'] == 'OBJ_DIR' and 'text' in x]
 
-            triggers = [tokenizer.encode(x)[1:-1] for x in obj_triggers + const_triggers]
+            triggers = [self.tokenizer.encode(x)[1:-1] for x in obj_triggers + const_triggers]
 
             # print("decoder_input_chunks", decoder_input_chunks)
 
@@ -37,10 +37,10 @@ class DeclarationMappingDataset(LPMappingDataset):
                 # decl_trigger = [tokenizer.bos_token_id] + decoder_input[0] + [tokenizer.eos_token_id]
                 pad_num = self.max_length - len(decl_trigger) - len(orig_input_ids)
                 attn_mask = [1] * (len(decl_trigger) + len(orig_input_ids)) + [0] * pad_num
-                input_ids = decl_trigger + orig_input_ids + [tokenizer.pad_token_id] * pad_num
+                input_ids = decl_trigger + orig_input_ids + [self.tokenizer.pad_token_id] * pad_num
 
                 assert len(input_ids) == self.max_length, len(input_ids)
-                input_tokens = tokenizer.decode(input_ids)
+                input_tokens = self.tokenizer.decode(input_ids)
                 instance = Instance(
                     doc_id=doc_id,
                     input_ids=input_ids,

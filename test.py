@@ -83,12 +83,11 @@ train_set = None
 
 print('============== Prepare Test Set: starting =================')
 if config.per_declaration:
-    test_set = DeclarationMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
+    test_set = DeclarationMappingDataset(config.test_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 else:
-    test_set = LPMappingDataset(config.test_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
-test_set.numberize(tokenizer)
+    test_set = LPMappingDataset(config.test_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
+test_set.numberize()
 print('============== Prepare Test Set: finished =================')
-
 
 # initialize the model
 model = TextMappingModel(config)
