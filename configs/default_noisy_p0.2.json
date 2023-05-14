@@ -1,7 +1,7 @@
 {
     "accumulate_step": 2,
     "batch_size": 16,
-    "eval_batch_size": 16,
+    "eval_batch_size": 64,
     "eval_period": 1,
 
     "bert_cache_dir": ".cache/bert",

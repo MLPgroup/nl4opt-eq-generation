@@ -79,10 +79,10 @@ tokenizer.add_tokens(SPECIAL_TOKENS)
 
 if config.per_declaration:
     print('==============Prepare Training Set=================')
-    train_set = DeclarationMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu,
+    train_set = DeclarationMappingDataset(config.train_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu,
                                           enrich_ner=config.enrich_ner)
     print('==============Prepare Dev Set=================')
-    dev_set = DeclarationMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu,
+    dev_set = DeclarationMappingDataset(config.dev_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu,
                                         enrich_ner=config.enrich_ner)
 else:
     print('==============Prepare Training Set=================')
@@ -90,16 +90,10 @@ else:
     print('==============Prepare Dev Set=================')
     dev_set = LPMappingDataset(config.dev_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 
-if config.per_declaration:
-    print('==============Prepare Training Set=================')
-    train_set.numberize(tokenizer)
-    print('==============Prepare Dev Set=================')
-    dev_set.numberize(tokenizer)
-else:
-    print('==============Prepare Training Set=================')
-    train_set.numberize()
-    print('==============Prepare Dev Set=================')
-    dev_set.numberize()
+print('==============Prepare Training Set=================')
+train_set.numberize()
+print('==============Prepare Dev Set=================')
+dev_set.numberize()
 
 # TODO: define dev and test golds
 
