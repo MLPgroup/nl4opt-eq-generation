@@ -86,14 +86,20 @@ if config.per_declaration:
                                         enrich_ner=config.enrich_ner)
 else:
     print('==============Prepare Training Set=================')
-    train_set = LPMappingDataset(config.train_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
+    train_set = LPMappingDataset(config.train_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
     print('==============Prepare Dev Set=================')
-    dev_set = LPMappingDataset(config.dev_file, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
+    dev_set = LPMappingDataset(config.dev_file, tokenizer=tokenizer, max_length=config.max_length, gpu=use_gpu, enrich_ner=config.enrich_ner)
 
-print('==============Prepare Training Set=================')
-train_set.numberize(tokenizer)
-print('==============Prepare Dev Set=================')
-dev_set.numberize(tokenizer)
+if config.per_declaration:
+    print('==============Prepare Training Set=================')
+    train_set.numberize(tokenizer)
+    print('==============Prepare Dev Set=================')
+    dev_set.numberize(tokenizer)
+else:
+    print('==============Prepare Training Set=================')
+    train_set.numberize()
+    print('==============Prepare Dev Set=================')
+    dev_set.numberize()
 
 # TODO: define dev and test golds
 

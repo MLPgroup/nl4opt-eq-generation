@@ -23,7 +23,7 @@ Batch = namedtuple('Batch', field_names=batch_fields,
 
 
 class LPMappingDataset(Dataset):
-    def __init__(self, path, max_length=128, gpu=False, no_prompt=False, enrich_ner=False):
+    def __init__(self, path, tokenizer, max_length=128, gpu=False, no_prompt=False, enrich_ner=False):
         """
         :param path (str): path to the data file.
         :param max_length (int): max sentence length.
@@ -36,6 +36,7 @@ class LPMappingDataset(Dataset):
         self.gpu = gpu
         self.no_prompt = no_prompt
         self.enrich_ner = enrich_ner
+        self.tokenizer = tokenizer
 
         self.load_data()
 
@@ -77,7 +78,7 @@ class LPMappingDataset(Dataset):
 
         return output
 
-    def create_decoder_input_chunks(self, example, tokenizer):
+    def create_decoder_input_chunks(self, example):
 
         obj_declaration = [example['obj_declaration']] if example['obj_declaration'] else []
         templates = obj_declaration + example['const_declarations']
@@ -95,12 +96,12 @@ class LPMappingDataset(Dataset):
                 # entity = []
                 encoded_fragment = []
                 for entity_token in fragment:
-                    encoded_fragment += token2sub_tokens(tokenizer, entity_token)
+                    encoded_fragment += token2sub_tokens(self.tokenizer, entity_token)
                 encoded_typed_fragments.append(encoded_fragment)
             res.append(encoded_typed_fragments)
         return res
 
-    def numberize(self, tokenizer):
+    def numberize(self):
         """Numberize word pieces, labels, etcs.
         :param tokenizer: Bert tokenizer.
         """
@@ -110,17 +111,19 @@ class LPMappingDataset(Dataset):
             document = self.get_document(content) # ['document']
             order_mapping = content.get('order_mapping', None)
 
-            input_ids = tokenizer([document])['input_ids'][0]
+            tokenized_document = self.tokenizer(document)
+            input_ids = tokenized_document['input_ids']
+            attn_mask = tokenized_document['attention_mask']
 
-            pad_num = self.max_length - len(input_ids)
-            attn_mask = [1] * len(input_ids) + [0] * pad_num
-            input_ids = input_ids + [tokenizer.pad_token_id] * pad_num
+            # pad_num = self.max_length - len(input_ids)
+            # attn_mask = [1] * len(input_ids) + [0] * pad_num
+            # input_ids = input_ids + [tokenizer.pad_token_id] * pad_num
 
-            decoder_input_chunks = self.create_decoder_input_chunks(content, tokenizer)
+            decoder_input_chunks = self.create_decoder_input_chunks(content)
 
-            assert len(input_ids) == self.max_length, len(input_ids)
+            assert len(input_ids) <= self.max_length, len(input_ids)
 
-            input_tokens = tokenizer.decode(input_ids)
+            input_tokens = self.tokenizer.decode(input_ids)
             # print("decoder_input_chunks", decoder_input_chunks)
             instance = Instance(
                 doc_id=doc_id,
@@ -144,9 +147,21 @@ class LPMappingDataset(Dataset):
 
         doc_ids = [inst.doc_id for inst in batch]
 
+        input_seq_lens = [len(inst.input_ids) for inst in batch]
+        max_input_seq_len = max(input_seq_lens)
+
         for inst in batch:
-            batch_input_ids.append(inst.input_ids)
-            batch_attention_masks.append(inst.attention_mask)
+            # batch_input_ids.append(inst.input_ids)
+            # batch_attention_masks.append(inst.attention_mask)
+            input_ids = inst.input_ids
+            attn_mask = inst.attention_mask
+            assert len(input_ids) == len(attn_mask)
+            pad_num = max(max_input_seq_len - len(input_ids), 0)
+            input_ids = input_ids + [self.tokenizer.pad_token_id] * pad_num
+            attn_mask = attn_mask + [0] * pad_num
+
+            batch_input_ids.append(input_ids)
+            batch_attention_masks.append(attn_mask)
             batch_decoder_input_chunks.append(inst.decoder_input_chunks)
             batch_input_tokens.append(inst.input_tokens)
             batch_document.append(inst.document)
