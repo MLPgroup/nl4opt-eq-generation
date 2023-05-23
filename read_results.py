@@ -36,7 +36,7 @@ def main():
     args = parser.parse_args()
 
     is_copy = not args.no_copy
-    is_ner = not args.is_ner
+    is_ner = not args.no_ner
     is_per_declr = not args.no_per_declr
 
     results = read_results(args.config, args.beam_size, is_copy = is_copy, is_ner = is_ner, is_per_declr = is_per_declr)
