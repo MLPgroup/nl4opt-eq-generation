@@ -16,7 +16,7 @@ def read_results(dirname, beam_size, is_copy, is_ner, is_per_declr):
 
         assert config["use_copy"] == is_copy
         assert config["enrich_ner"] == is_ner
-        assert config["is_per_declr"] == is_per_declr
+        assert config["per_declaration"] == is_per_declr
 
         with open(result_file) as f:
             score = f.read()
