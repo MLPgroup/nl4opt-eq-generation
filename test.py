@@ -129,7 +129,7 @@ outfilepath = os.path.join(output_dir, args.outfilename)
 with open(outfilepath, 'w') as f:
     output = {
         "accuracy": test_result["accuracy"],
-        "seed": config["seed"],
+        "seed": config.seed,
         "test_file": args.test_file,
         "beam_size": args.beam_size,
     }
