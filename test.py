@@ -127,4 +127,10 @@ with open(test_result_file, 'w') as f:
 # output result to file for evaluation
 outfilepath = os.path.join(output_dir, args.outfilename)
 with open(outfilepath, 'w') as f:
-    f.write(json.dumps(test_result["accuracy"]))
+    output = {
+        "accuracy": test_result["accuracy"],
+        "seed": config["seed"],
+        "test_file": args.test_file,
+        "beam_size": args.beam_size,
+    }
+    f.write(json.dumps(output, indent = 4))
