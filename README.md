@@ -30,6 +30,7 @@ The training and testing pipeline can be run using `train_and_evaluate.sh`. This
 bash train_and_evaluate.sh
 ```
 
+## Training and Evaluating the Model
 To train the model, run the following:
 ```
 python train.py --config configs/default.json --seed 42
