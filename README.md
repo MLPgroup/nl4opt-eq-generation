@@ -32,7 +32,7 @@ bash train_and_evaluate.sh
 
 To train the model, run the following:
 ```
-python train.py --config configs/default.json
+python train.py --config configs/default.json --seed 42
 ```
 The important parameters in the training are:
 - `use_copy` uses a copy mechanism that computes $P_\text{copy}$ over the input tokens.
