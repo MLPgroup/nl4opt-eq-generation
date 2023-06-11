@@ -38,7 +38,6 @@ python train.py --config configs/default.json --seed 42
 The important parameters in the training are:
 - `use_copy` uses a copy mechanism that computes $P_\text{copy}$ over the input tokens.
 - `per_declaration` controls each training data sample to correspond to a single declaration of a given LP problem instead of the entire formulation (i.e. all declarations in the problem).
-- `use_prompt` uses a declaration prompt to focus the generation. For example, the `<OBJ_DIR>` is used as a prompt for generating the objective declaration.
 - `enrich_ner` controls if the named entity information should be added to the input before feeding it to the model.
 
 To evaluate the model, run the following:

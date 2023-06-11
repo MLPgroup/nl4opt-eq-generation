@@ -5,7 +5,7 @@ import json
 import statistics as s
 
 
-def read_results(dirname, beam_size, is_copy, is_ner, is_per_declr, train_file, dev_file, test_file):
+def read_results(dirname, beam_size, is_copy, is_ner, is_per_declr, train_file, dev_file, test_file, model):
     dirlist = glob.glob(f"output/{dirname}/*")
     score_dict = {}
     for dirpath in dirlist:
@@ -27,6 +27,7 @@ def read_results(dirname, beam_size, is_copy, is_ner, is_per_declr, train_file, 
         assert config["train_file"] == train_file
         assert config["dev_file"] == dev_file
         assert results["test_file"] == test_file
+        assert config["bert_model_name"] == model
 
     return score_dict
 
@@ -42,6 +43,7 @@ def main():
     parser.add_argument("--train_file", type = str, required = True)
     parser.add_argument("--dev_file", type = str, required = True)
     parser.add_argument("--test_file", type = str, required = True)
+    parser.add_argument("--model", type = str, required = True)
     args = parser.parse_args()
 
     is_copy = not args.no_copy
@@ -57,6 +59,7 @@ def main():
         train_file = args.train_file,
         dev_file = args.dev_file,
         test_file = args.test_file,
+        model = args.model,
     )
     assert len(results) == args.n_expected_runs
 
