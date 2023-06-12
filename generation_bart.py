@@ -95,9 +95,9 @@ class CopyConditionalGeneration(BartForConditionalGeneration):
 
         lm_logits = F.softmax(lm_logits, dim=-1) * p_gen + copy_logits * (1 - p_gen)  # (batch_size, decoding_seq_length, emb_dim)
 
-        # This is required for for beam search. Training and greedy decoding works fine without it. Beam search takes
-        # logits as input and uses F.log_softmax to compute log probability. As in this implementation, lm_logits in a
-        # probability distribution, not logits, taking log_softmax on this distribution reasults in incorrect values
+        # This is required for beam search. Training and greedy decoding work fine without it. Beam search takes
+        # logits as input and uses F.log_softmax to compute log probabilities. As in this implementation, lm_logits is a
+        # probability distribution, not logits, taking log_softmax on this distribution results in incorrect values
         # since values inside lm_logits are already very small (of the order of 1e-19). Ideally, if there were a way to
         # recover logits, that should be used. But since that is not possible, the next best thing is log.
         eps = 1e-30

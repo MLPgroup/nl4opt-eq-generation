@@ -9,19 +9,19 @@
     "bert_model_name": "facebook/bart-large",
     "weight_decay": 1e-05,
 
-    "train_file": "data/train_noisy.jsonl",
-    "dev_file": "data/dev_noisy.jsonl",
+    "train_file": "data/train_noisy_p0.2.jsonl",
+    "dev_file": "data/dev_noisy_p0.2.jsonl",
 
     "SOT_weights":5,
     "max_position_embeddings":512,
     "grad_clipping": 1.0,
-    "log_path": "log/default_noisy",
+    "log_path": "log/default_noisy_p0.2",
     "k":10,
     "max_epoch": 400,
     "warmup_epoch": 5,
     "max_length": 512,
 
-    "output_path": "output/default_noisy",
+    "output_path": "output/default_noisy_p0.2",
     "use_copy": true,
     "per_declaration" : false,
     "enrich_ner": true,
