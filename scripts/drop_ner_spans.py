@@ -5,7 +5,7 @@ import numpy as np
 from argparse import ArgumentParser
 
 
-class AddNERSpanNoise:
+class DropNERSpans:
     def __init__(self, dataset_file: str, out_file: str, prob: float = 0.15, max_span_width: int = 4):
         self.dataset_file = dataset_file
         self.out_file = out_file
@@ -78,7 +78,7 @@ class AddNERSpanNoise:
 
 
 def main():
-    parser = ArgumentParser("Script to predict NER spans.")
+    parser = ArgumentParser("Script to drop NER spans.")
     parser.add_argument("--dataset_file", type = str, required = True)
     parser.add_argument("--out_file", type = str, required = True)
     parser.add_argument("--prob", type = float, default = 0.15)
@@ -88,7 +88,7 @@ def main():
 
     random.seed(args.seed)
 
-    ner_predictor = AddNERSpanNoise(
+    ner_predictor = DropNERSpans(
         dataset_file = args.dataset_file,
         out_file = args.out_file,
         prob = args.prob,

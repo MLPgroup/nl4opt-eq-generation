@@ -4,11 +4,31 @@ import json
 import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from utils.utils import load_model, get_tagset, get_trainer
+from utils.utils import load_model, get_tagset
 from utils.reader import CoNLLReader
 
 
 class NERPredictor:
+    """
+    This class predicts the named entities for the problem descriptions in an input dataset,
+    specified by `datafile`, using a trained NER model, specified by `ner_model_dir`. It
+    replaces the "spans" property present in the input dataset with the predicted NER spans
+    and saves the output to a path, specified by `outfile`. It does not modify the input file.
+    Only NL4Opt baseline model is supported. To run this script, a Python environment for the
+    NL4Opt NER baseline model is required. Refer to https://github.com/nl4opt/nl4opt-subtask1-baseline
+    to setup the Python environment and train a model.
+
+    Parameters
+    ----------
+    ner_model_dir: str
+        Directory with a trained NER model.
+
+    datafile: str
+        NL4Opt generation dataset file, for example, train.jsonl, dev.jsonl, or test.jsonl.
+
+    outfile: str
+        A complete path for saving the output.
+    """
     def __init__(self, ner_model_dir: str, datafile: str, outfile: str) -> None:
         assert os.path.exists(ner_model_dir), f"{ner_model_dir} does not exist!"
         assert os.path.exists(datafile), f"{datafile} does not exist!"
