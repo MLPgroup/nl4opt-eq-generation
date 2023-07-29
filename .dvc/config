@@ -1,0 +1,5 @@
+[core]
+    autostage = true
+    remote = ngdrive
+['remote "ngdrive"']
+    url = gdrive://1hBATcFUFja1QeyzNf5u09HJMXyKn9izQ/nl4opt-generation
